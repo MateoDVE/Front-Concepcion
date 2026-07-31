@@ -1,0 +1,67 @@
+<div class="container animate-fade-in">
+  <!-- Page Header -->
+  <div class="page-greeting mb-4">
+    <h2 class="text-headline-lg font-bold text-primary">Resumen Diario</h2>
+    <p class="text-muted text-body-sm">Balance consolidado del vendedor {{ activeVendor?.name }}.</p>
+  </div>
+
+  <div class="report-content space-y-6">
+    <!-- Collected Monies Card -->
+    <section class="cash-card relative overflow-hidden rounded-lg p-6 bg-secondary text-on-secondary shadow-lg">
+      <div class="bg-blur-accent"></div>
+      <div class="relative z-10 space-y-4">
+        <div>
+          <p class="text-caption uppercase tracking-wider opacity-85 mb-1">Efectivo a Rendir</p>
+          <h2 class="text-[36px] font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
+        </div>
+
+        <div class="progress-bar-wrap">
+          <div class="flex justify-between items-center text-caption mb-1">
+            <span>Efectividad de Entrega</span>
+            <span class="font-bold">{{ efficiencyRate }}%</span>
+          </div>
+          <div class="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
+            <div class="h-full bg-white rounded-full" [style.width.%]="efficiencyRate"></div>
+          </div>
+        </div>
+
+        <div class="metrics-summary-grid flex justify-between items-center pt-2">
+          <div>
+            <span class="text-caption opacity-85 block">Paradas</span>
+            <span class="font-bold text-body-lg text-white">{{ totalStops }}</span>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <span class="text-caption opacity-85 block">Entregados</span>
+            <span class="font-bold text-body-lg text-white">{{ deliveredCount }}</span>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <span class="text-caption opacity-85 block">Fallidos</span>
+            <span class="font-bold text-body-lg text-white">{{ failedCount }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cash Breakdown List -->
+    <section class="section-card">
+      <h3 class="text-headline-md font-semibold text-primary mb-4">Entregas que rinden efectivo</h3>
+      
+      <div *ngIf="deliveredCount === 0" class="empty-state">
+        <span class="material-symbols-outlined empty-icon">payments</span>
+        <p class="text-muted text-body-sm">Aún no registras entregas exitosas hoy.</p>
+      </div>
+
+      <div class="cash-list space-y-2" *ngIf="deliveredCount > 0">
+        <div *ngFor="let order of vendorOrders" class="cash-item p-3 border rounded-lg flex justify-between items-center" [class.hidden]="order.status !== 'delivered'">
+          <div>
+            <span class="text-body-sm font-bold block">{{ order.clientName }}</span>
+            <span class="text-caption text-muted">{{ order.id }}</span>
+          </div>
+          <span class="text-body-sm font-bold text-secondary">{{ formatCurrency(order.total) }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,80 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.report-content {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+// Cash Rendition Card
+.cash-card {
+  background: linear-gradient(135deg, $color-secondary-container 0%, $color-secondary 100%);
+  border-radius: $radius-default;
+  border-color: transparent;
+  box-shadow: $shadow-lg;
+  color: $color-on-secondary;
+
+  .bg-blur-accent {
+    position: absolute;
+    top: -48px;
+    right: -48px;
+    width: 192px;
+    height: 192px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: $radius-full;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  .progress-bar-wrap {
+    background: rgba(255, 255, 255, 0.08);
+    padding: $space-3 $space-4;
+    border-radius: $radius-default;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .metrics-summary-grid {
+    .divider {
+      width: 1px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// Detail Section Card
+.section-card {
+  @include card(sm);
+  border-radius: $radius-md;
+  background: $color-surface-container-lowest;
+  padding: $space-5;
+}
+
+.cash-list {
+  @include flex-column(flex-start, stretch, $space-2);
+}
+
+.cash-item {
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  background: $color-surface-container-lowest;
+  padding: $space-3 $space-4;
+  border-radius: $radius-default;
+
+  &.hidden {
+    display: none;
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.25);
+}
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  padding: $space-6 0;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 40px;
+    color: $color-outline-variant;
+  }
+}

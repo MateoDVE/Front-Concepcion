@@ -1,0 +1,52 @@
+<div class="container animate-fade-in">
+  <!-- Page Header -->
+  <div class="page-greeting mb-4">
+    <h2 class="text-headline-lg font-bold text-primary">Historial del Día</h2>
+    <p class="text-muted text-body-sm">Registro de entregas ejecutadas por {{ activeVendor?.name }}.</p>
+  </div>
+
+  <!-- Search Input -->
+  <section class="controls-card mb-6">
+    <div class="search-bar-wrap">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input type="text" 
+             placeholder="Buscar entregas por cliente o ID..." 
+             [(ngModel)]="searchQuery" 
+             (ngModelChange)="onSearchChange()"
+             class="search-input" />
+    </div>
+  </section>
+
+  <!-- Deliveries List -->
+  <section class="entregas-list space-y-4">
+    <div *ngIf="filteredOrders.length === 0" class="empty-state">
+      <span class="material-symbols-outlined empty-icon">assignment_late</span>
+      <p class="text-muted">No tienes entregas completadas con este criterio.</p>
+    </div>
+
+    <!-- Delivery Stop Row Card -->
+    <div *ngFor="let order of filteredOrders" class="stop-card animate-slide-up stop-card--completed">
+      <div class="stop-card-header">
+        <div class="left-info">
+          <span class="state-dot" [ngClass]="order.status"></span>
+          <div class="client-meta">
+            <h4 class="client-name font-bold text-body-md">{{ order.clientName }}</h4>
+            <span class="order-id text-caption text-muted">
+              {{ order.id }} • {{ formatDate(order.deliveredAt || order.createdAt) }}
+            </span>
+          </div>
+        </div>
+        <div class="right-total text-right">
+          <span class="total-amount font-bold text-body-md text-primary">{{ formatCurrency(order.total) }}</span>
+        </div>
+      </div>
+      
+      <!-- Display reason if failed -->
+      <div class="pt-3 border-t mt-3 text-body-sm" *ngIf="order.status === 'failed'">
+        <p class="text-error font-medium">
+          <span class="material-symbols-outlined text-sm">warning</span> Motivo: {{ order.failedReason || 'No especificado' }}
+        </p>
+      </div>
+    </div>
+  </section>
+</div>

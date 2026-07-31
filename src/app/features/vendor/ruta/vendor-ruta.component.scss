@@ -1,0 +1,196 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.page-greeting {
+  h2 {
+    color: $color-primary;
+    line-height: 1.2;
+  }
+}
+
+// Progress Card
+.progress-card {
+  @include card(sm);
+  border-radius: $radius-default;
+  padding: $space-4;
+  background: $color-surface-container-low;
+  border: 1px solid rgba($color-outline-variant, 0.25);
+}
+
+.progress-gradient {
+  background: linear-gradient(90deg, #97f5a2 0%, #077230 100%);
+}
+
+// Stop card lists
+.stops-section {
+  @include flex-column(flex-start, stretch, $space-3);
+}
+
+.stop-card {
+  @include card(sm);
+  border-radius: $radius-default;
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  padding: $space-4;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    border-color: rgba($color-primary, 0.4);
+  }
+
+  // Active highlighted card
+  &--active {
+    background: rgba($color-primary-container, 0.03);
+    border-color: $color-primary-container;
+    box-shadow: $shadow-md;
+    
+    .client-name {
+      color: $color-primary-container;
+    }
+  }
+
+  // Completed card
+  &--completed {
+    background: $color-surface-container-low;
+    border-color: rgba($color-outline-variant, 0.25);
+    opacity: 0.9;
+  }
+
+  .stop-card-header {
+    @include flex(row, space-between, center, $space-3);
+
+    .left-info {
+      @include flex(row, flex-start, center, $space-3);
+      min-width: 0;
+    }
+
+    .client-meta {
+      min-width: 0;
+      @include flex-column(center, flex-start, 2px);
+
+      .client-name {
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .state-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+    
+    &.pending { background: $color-warning; }
+    &.loaded { background: $color-primary-container; }
+    &.route { background: $color-primary; }
+    &.delivered { background: $color-secondary; }
+    &.failed { background: $color-error; }
+  }
+
+  .stop-card-details {
+    animation: fadeIn $transition-fast forwards;
+    
+    .address {
+      @include flex(row, flex-start, center, 4px);
+    }
+    
+    .products-list {
+      @include flex-column(flex-start, stretch, $space-1);
+    }
+
+    .product-item {
+      color: $color-on-surface;
+    }
+  }
+
+  .stop-card-actions {
+    @include flex(row, space-between, center, $space-2);
+  }
+
+  .completed-notice {
+    @include flex-center(4px);
+    height: 40px;
+  }
+}
+
+// Modal Form
+.modal-backdrop-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  @include flex-center();
+  padding: $space-4;
+}
+
+.modal-backdrop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: $color-surface-container-lowest;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: $space-6;
+  z-index: 10;
+  border: 1px solid rgba($color-outline-variant, 0.45);
+
+  .modal-close-btn {
+    color: $color-outline;
+    @include flex-center();
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+  }
+
+  .modal-header {
+    @include flex(row, space-between, center, $space-4);
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    padding-bottom: $space-3;
+  }
+
+  .form-group {
+    @include flex-column(center, flex-start, $space-1);
+    
+    .form-select {
+      width: 100%;
+      border-radius: $radius-full;
+      background: $color-surface-container-low;
+      border: 1px solid rgba($color-outline-variant, 0.4);
+    }
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.25);
+}
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  padding: $space-8 0;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    color: $color-outline-variant;
+  }
+}
