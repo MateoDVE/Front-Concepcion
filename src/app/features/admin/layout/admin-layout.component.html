@@ -1,0 +1,102 @@
+<div class="app-layout">
+  <!-- Desktop Sidebar & Mobile Drawer -->
+  <aside class="app-sidebar" [class.open]="isMobileSidebarOpen">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+        </svg>
+      </div>
+      <span class="sidebar-logo-text">Concepción</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">dashboard</span> Dashboard
+      </a>
+      <a routerLink="/admin/pedidos" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">local_shipping</span> Pedidos
+      </a>
+      <a routerLink="/admin/crear-pedido" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">add_circle</span> Crear Pedido
+      </a>
+      <a routerLink="/admin/clientes" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">person</span> Clientes
+      </a>
+      <a routerLink="/admin/inventario" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">inventory_2</span> Inventario
+      </a>
+      <a routerLink="/admin/reporte" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined">analytics</span> Reportes
+      </a>
+
+      <div class="spacer"></div>
+      
+      <button (click)="logout(); closeMobileSidebar()" class="sidebar-link sidebar-link--exit">
+        <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+      </button>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">AD</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">Admin</div>
+        <div class="sidebar-user-role">Administrador</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Backdrop -->
+  <div class="modal-backdrop" *ngIf="isMobileSidebarOpen" (click)="closeMobileSidebar()"></div>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-content-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <button class="header-btn" (click)="toggleMobileSidebar()" aria-label="Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <span class="header-title font-bold text-headline-md">Distribuidora Concepción</span>
+      </div>
+      <div class="header-right">
+        <div class="header-avatar-wrap">
+          <div class="header-avatar">AD</div>
+          <div class="header-user-info">
+            <span class="header-user-name font-semibold text-body-sm">Admin</span>
+            <span class="header-user-role text-caption text-muted">Administrador</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Outlet -->
+    <main class="app-main">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Bottom Navigation (Mobile Viewports) -->
+  <nav class="app-bottom-nav">
+    <a routerLink="/admin/dashboard" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span>Inicio</span>
+    </a>
+    <a routerLink="/admin/pedidos" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">local_shipping</span>
+      <span>Pedidos</span>
+    </a>
+    <a routerLink="/admin/crear-pedido" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">add_circle</span>
+      <span>Crear</span>
+    </a>
+    <a routerLink="/admin/clientes" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">person</span>
+      <span>Clientes</span>
+    </a>
+    <a routerLink="/admin/reporte" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">analytics</span>
+      <span>Reportes</span>
+    </a>
+  </nav>
+</div>

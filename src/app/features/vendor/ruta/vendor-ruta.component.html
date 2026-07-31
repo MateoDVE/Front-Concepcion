@@ -1,0 +1,157 @@
+<div class="container animate-fade-in">
+  <!-- Greeting -->
+  <div class="page-greeting mb-4">
+    <h2 class="text-headline-lg font-bold text-primary">Hola, {{ activeVendor?.name }}</h2>
+    <p class="text-muted text-body-sm">Tu ruta de hoy: {{ totalRouteCount - completedRouteCount }} entregas restantes</p>
+  </div>
+
+  <!-- Progress Card -->
+  <section class="progress-card mb-6">
+    <div class="progress-header flex justify-between items-center text-caption font-bold text-primary">
+      <span>PROGRESO DE RUTA</span>
+      <span>{{ progressPercent }}%</span>
+    </div>
+    <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden mb-2">
+      <div class="h-full progress-gradient rounded-full" [style.width.%]="progressPercent"></div>
+    </div>
+    <div class="progress-footer flex justify-between text-caption text-muted">
+      <span>{{ completedRouteCount }} de {{ totalRouteCount }} entregados</span>
+      <span class="flex items-center gap-1">
+        <span class="material-symbols-outlined text-[14px]">schedule</span> 1h 30m aprox.
+      </span>
+    </div>
+  </section>
+
+  <!-- Stops List -->
+  <section class="stops-section space-y-4">
+    <h3 class="section-title text-label-lg uppercase tracking-wider text-muted">Puntos de Entrega</h3>
+
+    <div *ngIf="vendorOrders.length === 0" class="empty-state">
+      <span class="material-symbols-outlined empty-icon">assignment_turned_in</span>
+      <p class="text-muted">No tienes pedidos asignados hoy.</p>
+    </div>
+
+    <!-- Stop Card -->
+    <div *ngFor="let order of vendorOrders" 
+         (click)="toggleExpand(order.id)" 
+         class="stop-card animate-slide-up"
+         [class.stop-card--active]="order.status === 'route'"
+         [class.stop-card--completed]="order.status === 'delivered' || order.status === 'failed'">
+      
+      <!-- Top header line of card -->
+      <div class="stop-card-header">
+        <div class="left-info">
+          <!-- Small dot badge -->
+          <span class="state-dot" [ngClass]="order.status"></span>
+          <div class="client-meta">
+            <h4 class="client-name font-bold text-body-md">{{ order.clientName }}</h4>
+            <span class="order-id text-caption text-muted">{{ order.id }}</span>
+          </div>
+        </div>
+        <div class="right-total text-right">
+          <span class="total-amount font-bold text-body-md text-primary">{{ formatCurrency(order.total) }}</span>
+        </div>
+      </div>
+
+      <!-- Collapsible items & address detail -->
+      <div class="stop-card-details pt-3 border-t mt-3 space-y-2 animate-fade-in" *ngIf="isExpanded(order.id)">
+        <p class="address text-body-sm text-muted">
+          <span class="material-symbols-outlined text-sm">location_on</span>
+          {{ order.clientName }} • {{ order.id }}
+        </p>
+        
+        <div class="products-list pt-2 border-t">
+          <span class="text-caption text-muted uppercase block mb-1">Productos</span>
+          <div *ngFor="let item of order.items" class="product-item flex justify-between text-body-sm">
+            <span>{{ item.name }}</span>
+            <span class="font-semibold">{{ item.quantity }} unidades</span>
+          </div>
+        </div>
+
+        <p *ngIf="order.failedReason" class="text-error text-body-sm font-medium mt-1">
+          Motivo Falla: {{ order.failedReason }}
+        </p>
+      </div>
+
+      <!-- Contextual Action row (does not bubble click to trigger expansion) -->
+      <div class="stop-card-actions pt-3 border-t mt-3 flex gap-3" (click)="$event.stopPropagation()">
+        <!-- Pendiente Action: Cargar -->
+        <button *ngIf="order.status === 'pending'" 
+                (click)="markLoaded(order.id)" 
+                class="btn btn--outline btn--full py-3">
+          <span class="material-symbols-outlined text-sm">inventory_2</span> Cargar Carga
+        </button>
+
+        <!-- Cargado Actions: Mapa, Iniciar Entrega -->
+        <ng-container *ngIf="order.status === 'loaded'">
+          <button (click)="openMap(order)" class="btn btn--outline flex-1 py-3">
+            <span class="material-symbols-outlined text-sm">map</span> Mapa
+          </button>
+          <button (click)="startDelivery(order.id)" class="btn btn--primary flex-[1.5] py-3">
+            <span class="material-symbols-outlined text-sm">local_shipping</span> Iniciar Entrega
+          </button>
+        </ng-container>
+
+        <!-- Active Actions: Mapa, Entregar, Falla -->
+        <ng-container *ngIf="order.status === 'route'">
+          <button (click)="openMap(order)" class="btn btn--outline flex-1 py-3" aria-label="Mapa">
+            <span class="material-symbols-outlined text-sm">map</span>
+          </button>
+          <button (click)="markDelivered(order.id)" class="btn btn--success flex-[1.5] py-3">
+            <span class="material-symbols-outlined text-sm">check_circle</span> Entregar
+          </button>
+          <button (click)="openFailModal(order)" class="btn btn--error flex-1 py-3">
+            <span class="material-symbols-outlined text-sm">warning</span> Falla
+          </button>
+        </ng-container>
+
+        <!-- Completed States Badge text (Delivered or Failed) -->
+        <div *ngIf="order.status === 'delivered'" class="completed-notice text-secondary text-body-sm font-bold flex items-center gap-1 w-full justify-center">
+          <span class="material-symbols-outlined text-sm">check_circle</span> Entregado
+        </div>
+        <div *ngIf="order.status === 'failed'" class="completed-notice text-error text-body-sm font-bold flex items-center gap-1 w-full justify-center">
+          <span class="material-symbols-outlined text-sm">warning</span> Falla Registrada
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Falla Report Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showFailModal && failingOrder">
+    <div class="modal-backdrop-overlay" (click)="closeFailModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-error">Reportar Incidencia</h3>
+        <button class="modal-close-btn" (click)="closeFailModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <p class="text-body-sm text-muted mb-2">
+          Selecciona el motivo por el cual no se pudo concretar la entrega a <span class="font-bold text-primary">{{ failingOrder.clientName }}</span>.
+        </p>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Motivo de Falla</label>
+          <select [(ngModel)]="failReason" class="form-select w-full py-3">
+            <option value="Cliente Ausente">Cliente Ausente</option>
+            <option value="Sin Efectivo / No Pudo Pagar">Sin Efectivo / No Pudo Pagar</option>
+            <option value="Sin Stock de Envases">Sin Stock de Envases</option>
+            <option value="Dirección Incorrecta">Dirección Incorrecta</option>
+            <option value="Pedido Cancelado">Pedido Cancelado</option>
+            <option value="Otro Motivo">Otro Motivo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeFailModal()">Cancelar</button>
+        <button class="btn btn--error flex-[1.5]" (click)="submitFalla()">
+          <span class="material-symbols-outlined">warning</span> Registrar Falla
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

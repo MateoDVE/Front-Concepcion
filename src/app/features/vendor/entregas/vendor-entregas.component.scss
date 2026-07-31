@@ -1,0 +1,101 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.controls-card {
+  @include card(sm);
+  border-radius: $radius-default;
+  padding: $space-4;
+  background: $color-surface-container-low;
+  border: 1px solid rgba($color-outline-variant, 0.25);
+}
+
+.search-bar-wrap {
+  position: relative;
+  width: 100%;
+
+  .search-icon {
+    position: absolute;
+    left: $space-4;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $color-outline;
+    font-size: 20px;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: $space-3 $space-3 $space-3 $space-10;
+    border-radius: $radius-full;
+    background: $color-surface-container-lowest;
+    border: 1px solid rgba($color-outline-variant, 0.4);
+    font-size: $text-body-sm;
+    transition: all $transition-fast;
+
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+.entregas-list {
+  @include flex-column(flex-start, stretch, $space-3);
+}
+
+.stop-card {
+  @include card(sm);
+  border-radius: $radius-default;
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  padding: $space-4;
+
+  &--completed {
+    background: $color-surface-container-lowest;
+    border-color: rgba($color-outline-variant, 0.25);
+  }
+
+  .stop-card-header {
+    @include flex(row, space-between, center, $space-3);
+
+    .left-info {
+      @include flex(row, flex-start, center, $space-3);
+      min-width: 0;
+    }
+
+    .client-meta {
+      min-width: 0;
+      @include flex-column(center, flex-start, 2px);
+
+      .client-name {
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .state-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+    
+    &.delivered { background: $color-secondary; }
+    &.failed { background: $color-error; }
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.25);
+}
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  padding: $space-8 0;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    color: $color-outline-variant;
+  }
+}

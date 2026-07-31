@@ -1,0 +1,194 @@
+@use 'sass:color';
+@use 'variables' as *;
+
+// ---- Flexbox Helpers ----
+@mixin flex($direction: row, $justify: flex-start, $align: stretch, $gap: 0) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+  gap: $gap;
+}
+
+@mixin flex-center($gap: 0) {
+  @include flex(row, center, center, $gap);
+}
+
+@mixin flex-column($justify: flex-start, $align: stretch, $gap: 0) {
+  @include flex(column, $justify, $align, $gap);
+}
+
+// ---- Media Queries ----
+@mixin mobile {
+  @media (max-width: 1023px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1024px) {
+    @content;
+  }
+}
+
+// ---- Design Components ----
+
+// Glassmorphism effect
+@mixin glass($bg-opacity: 0.75, $blur: 20px) {
+  background: rgba(252, 249, 248, $bg-opacity);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba($color-outline-variant, 0.3);
+}
+
+// Cards
+@mixin card($elevation: md) {
+  background: $color-surface-container-lowest;
+  border-radius: $radius-default;
+  padding: $space-5;
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  
+  @if $elevation == sm {
+    box-shadow: $shadow-sm;
+  } @else if $elevation == md {
+    box-shadow: $shadow-ambient;
+  } @else if $elevation == lg {
+    box-shadow: $shadow-lg;
+  }
+  
+  transition: transform $transition-fast, box-shadow $transition-fast, border-color $transition-fast;
+}
+
+@mixin card-interactive($elevation: md) {
+  @include card($elevation);
+  cursor: pointer;
+  
+  &:hover {
+    border-color: $color-primary;
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Badges
+@mixin badge($state: pending) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-1 $space-3;
+  border-radius: $radius-full;
+  font-size: $text-label-md;
+  font-weight: $weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: fit-content;
+
+  @if $state == pending {
+    background-color: $color-warning-container;
+    color: $color-warning;
+  } @else if $state == route or $state == active or $state == loaded {
+    background-color: rgba($color-primary-container, 0.15);
+    color: $color-primary-container;
+  } @else if $state == delivered {
+    background-color: rgba($color-secondary-container, 0.4);
+    color: $color-on-secondary-container;
+  } @else if $state == failed or $state == error {
+    background-color: $color-error-container;
+    color: $color-error;
+  }
+}
+
+// Buttons
+@mixin btn($type: primary) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-3 $space-5;
+  border-radius: $radius-full;
+  font-weight: $weight-bold;
+  font-size: $text-body-sm;
+  transition: all $transition-fast;
+  cursor: pointer;
+  border: none;
+  text-align: center;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @if $type == primary {
+    background: linear-gradient(180deg, $color-primary-container 0%, color.adjust($color-primary-container, $lightness: -5%) 100%);
+    color: $color-on-primary;
+    box-shadow: 0 4px 12px rgba($color-primary-container, 0.2);
+    
+    &:hover {
+      opacity: 0.95;
+      box-shadow: 0 6px 16px rgba($color-primary-container, 0.3);
+    }
+  } @else if $type == secondary {
+    background: $color-surface-container-high;
+    color: $color-on-surface;
+    
+    &:hover {
+      background: $color-surface-container-highest;
+    }
+  } @else if $type == outline {
+    background: transparent;
+    border: 1px solid $color-outline-variant;
+    color: $color-on-surface-variant;
+    
+    &:hover {
+      background: $color-surface-container-low;
+      color: $color-on-surface;
+      border-color: $color-outline;
+    }
+  } @else if $type == error {
+    background: $color-error;
+    color: $color-on-error;
+    
+    &:hover {
+      background: color.adjust($color-error, $lightness: -5%);
+    }
+  } @else if $type == success {
+    background: $color-secondary;
+    color: $color-on-secondary;
+    
+    &:hover {
+      background: color.adjust($color-secondary, $lightness: -5%);
+    }
+  }
+}
+
+// Ripple Effect helper
+@mixin ripple {
+  position: relative;
+  overflow: hidden;
+  
+  &:after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transform: scale(10, 10);
+    opacity: 0;
+    transition: transform .5s, opacity 1s;
+  }
+  
+  &:active:after {
+    transform: scale(0, 0);
+    opacity: .3;
+    transition: 0s;
+  }
+}

@@ -1,0 +1,158 @@
+<div class="container animate-fade-in pb-12">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <h2 class="text-headline-xl text-primary">Clientes Registrados</h2>
+    <p class="text-muted text-body-md">Administra la base de contactos y consulta sus historiales de compra.</p>
+  </div>
+
+  <!-- Search Control -->
+  <section class="controls-card mb-6">
+    <div class="search-bar-wrap">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input type="text" 
+             placeholder="Buscar clientes por nombre, teléfono o dirección..." 
+             [(ngModel)]="searchQuery" 
+             (ngModelChange)="onSearchChange()"
+             class="search-input" />
+    </div>
+  </section>
+
+  <!-- Clients List Grid -->
+  <section class="clients-grid">
+    <div *ngIf="filteredClients.length === 0" class="empty-state w-full">
+      <span class="material-symbols-outlined empty-icon">group_off</span>
+      <p class="text-muted">No se encontraron clientes registrados.</p>
+    </div>
+
+    <!-- Client Card Item -->
+    <div *ngFor="let client of filteredClients" (click)="openDetailModal(client)" class="client-card animate-slide-up">
+      <div class="client-card-header">
+        <div class="avatar">{{ getClientInitials(client.name) }}</div>
+        <div class="meta">
+          <h3 class="name font-bold text-body-md text-primary">{{ client.name }}</h3>
+          <span class="phone text-caption text-muted flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">call</span> {{ client.phone }}
+          </span>
+        </div>
+      </div>
+      <div class="client-card-body">
+        <p class="address text-body-sm text-muted">
+          <span class="material-symbols-outlined text-sm">location_on</span> {{ client.address }}
+        </p>
+      </div>
+      <div class="client-card-footer border-t pt-3 flex justify-between items-center">
+        <button class="action-link text-body-sm font-semibold" (click)="$event.stopPropagation(); openMap(client.locationUrl)">
+          <span class="material-symbols-outlined text-sm">map</span> Ver Mapa
+        </button>
+        <span class="material-symbols-outlined chevron">chevron_right</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAB -->
+  <button class="fab shadow-lg" (click)="openAddModal()" aria-label="Agregar cliente">
+    <span class="material-symbols-outlined">person_add</span>
+  </button>
+
+  <!-- Add Client Form Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showAddModal">
+    <div class="modal-backdrop-overlay" (click)="closeAddModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Registrar Cliente</h3>
+        <button class="modal-close-btn" (click)="closeAddModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Nombre del Cliente *</label>
+          <input type="text" [(ngModel)]="newClientName" class="form-input w-full" placeholder="Ej. Minimarket La Esquina" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Teléfono / WhatsApp *</label>
+          <input type="text" [(ngModel)]="newClientPhone" class="form-input w-full" placeholder="Ej. +591 70000000" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Dirección de Entrega *</label>
+          <input type="text" [(ngModel)]="newClientAddress" class="form-input w-full" placeholder="Ej. Av. Piraí entre 3er y 4to anillo" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Enlace de Google Maps (Opcional)</label>
+          <input type="text" [(ngModel)]="newClientLocationUrl" class="form-input w-full" placeholder="Ej. https://maps.google.com/..." />
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeAddModal()">Cancelar</button>
+        <button class="btn btn--primary flex-[1.5]" (click)="saveClient()">
+          <span class="material-symbols-outlined">save</span> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Details & History Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDetailModal && selectedClient">
+    <div class="modal-backdrop-overlay" (click)="closeDetailModal()"></div>
+    
+    <div class="modal-card modal-card--large animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Detalle del Cliente</h3>
+        <button class="modal-close-btn" (click)="closeDetailModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="client-profile-header flex gap-4 items-center">
+          <div class="avatar-large">{{ getClientInitials(selectedClient.name) }}</div>
+          <div>
+            <h4 class="text-headline-md font-bold">{{ selectedClient.name }}</h4>
+            <p class="text-body-sm text-muted flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">call</span> {{ selectedClient.phone }}
+            </p>
+          </div>
+        </div>
+
+        <div class="p-4 bg-surface-container rounded-lg space-y-2">
+          <p class="text-body-sm"><span class="font-bold">Dirección:</span> {{ selectedClient.address }}</p>
+          <button class="btn btn--outline btn--full mt-2" (click)="openMap(selectedClient.locationUrl)">
+            <span class="material-symbols-outlined">location_on</span> Ver Ubicación en Maps
+          </button>
+        </div>
+
+        <!-- History list -->
+        <div class="history-section pt-4 border-t">
+          <h4 class="text-label-lg uppercase tracking-wider text-muted mb-3">Historial de Pedidos</h4>
+          
+          <div *ngIf="clientOrders.length === 0" class="empty-state empty-state--small">
+            <p class="text-muted text-body-sm">Este cliente aún no registra compras.</p>
+          </div>
+
+          <div class="history-list overflow-y-auto max-h-[220px] pr-2 space-y-2">
+            <div *ngFor="let order of clientOrders" class="history-item p-3 border rounded-lg flex justify-between items-center">
+              <div>
+                <span class="text-body-sm font-bold block text-primary">{{ order.id }}</span>
+                <span class="text-caption text-muted">{{ formatDate(order.createdAt) }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+                <span class="text-body-sm font-bold">{{ formatCurrency(order.total) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6">
+        <button class="btn btn--outline btn--full" (click)="closeDetailModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

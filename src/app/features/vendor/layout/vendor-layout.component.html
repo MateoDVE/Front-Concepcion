@@ -1,0 +1,63 @@
+<div class="app-layout">
+  <!-- Top App Bar for Vendor -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+      </div>
+      <span class="header-title font-bold text-headline-md">Distribuidora Concepción</span>
+    </div>
+
+    <!-- Active Vendor Profile Menu -->
+    <div class="header-right relative">
+      <button class="vendor-select-trigger" (click)="toggleSelector()" aria-label="Menu de usuario">
+        <div class="vendor-avatar">{{ activeVendor?.avatar || 'VE' }}</div>
+        <div class="vendor-details">
+          <div class="vendor-name font-semibold">{{ activeVendor?.name }}</div>
+          <div class="vendor-role">Vendedor <span class="material-symbols-outlined text-sm">expand_more</span></div>
+        </div>
+      </button>
+
+      <!-- Dropdown list -->
+      <div class="vendor-dropdown animate-fade-in" *ngIf="showVendorSelector">
+        <div class="dropdown-header text-label-md uppercase tracking-wider text-muted">Vendedor</div>
+        <div class="dropdown-item active">
+          <div class="vendor-avatar vendor-avatar--sm">{{ activeVendor?.avatar || 'VE' }}</div>
+          <span>{{ activeVendor?.name }}</span>
+        </div>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item dropdown-item--exit" (click)="logout()">
+          <span class="material-symbols-outlined text-sm">logout</span>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Backdrop overlay when selector is open -->
+  <div class="selector-backdrop" *ngIf="showVendorSelector" (click)="toggleSelector()"></div>
+
+  <!-- Router Outlet -->
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Vendor Bottom Navigation bar (Island Pill Dock) -->
+  <nav class="app-bottom-nav">
+    <a routerLink="/vendor/ruta" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">route</span>
+      <span>Ruta</span>
+    </a>
+    <a routerLink="/vendor/entregas" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">description</span>
+      <span>Entregas</span>
+    </a>
+    <a routerLink="/vendor/reporte" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">query_stats</span>
+      <span>Reporte</span>
+    </a>
+  </nav>
+</div>
