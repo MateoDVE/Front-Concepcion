@@ -1,1 +1,14 @@
-/* You can add global styles to this file, and also import other style files */
+/* ==========================================================================
+   Global Style System - Distribuidora Concepcion
+   ========================================================================== */
+
+@use 'styles/variables';
+@use 'styles/mixins';
+@use 'styles/base';
+
+// Global Layout styling that coordinates the panels
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

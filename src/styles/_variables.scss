@@ -1,0 +1,114 @@
+/* ============================================
+   Design Tokens - Luminous Modernity
+   ============================================ */
+
+// ---- Colors ----
+$color-surface: #fcf9f8;
+$color-surface-dim: #dcd9d9;
+$color-surface-bright: #fcf9f8;
+$color-surface-container-lowest: #ffffff;
+$color-surface-container-low: #f6f3f2;
+$color-surface-container: #f0edec;
+$color-surface-container-high: #ebe7e7;
+$color-surface-container-highest: #e5e2e1;
+
+$color-on-surface: #1c1b1b;
+$color-on-surface-variant: #424751;
+$color-inverse-surface: #313030;
+$color-inverse-on-surface: #f3f0ef;
+
+$color-outline: #737783;
+$color-outline-variant: #c2c6d3;
+
+$color-primary: #00346f;
+$color-primary-container: #004a99;
+$color-on-primary: #ffffff;
+$color-on-primary-container: #9bbdff;
+$color-inverse-primary: #abc7ff;
+
+$color-secondary: #006e2d;
+$color-secondary-container: #97f5a2;
+$color-on-secondary: #ffffff;
+$color-on-secondary-container: #077230;
+
+$color-error: #ba1a1a;
+$color-error-container: #ffdad6;
+$color-on-error: #ffffff;
+$color-on-error-container: #93000a;
+
+$color-warning: #f59e0b;
+$color-warning-container: #fef3c7;
+$color-on-warning: #ffffff;
+
+// ---- Typography ----
+$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+// Font sizes & line heights
+$text-headline-xl: 2rem;       // 32px
+$text-headline-lg: 1.5rem;     // 24px
+$text-headline-md: 1.25rem;    // 20px
+$text-body-lg: 1.125rem;       // 18px
+$text-body-md: 1rem;           // 16px
+$text-body-sm: 0.875rem;       // 14px
+$text-label-lg: 0.875rem;      // 14px
+$text-label-md: 0.75rem;       // 12px
+$text-caption: 0.75rem;        // 12px
+
+$weight-regular: 400;
+$weight-medium: 500;
+$weight-semibold: 600;
+$weight-bold: 700;
+$weight-extrabold: 800;
+
+// ---- Spacing (8px unit) ----
+$unit: 0.5rem;                 // 8px
+$space-1: 0.25rem;             // 4px
+$space-2: 0.5rem;              // 8px
+$space-3: 0.75rem;             // 12px
+$space-4: 1rem;                // 16px
+$space-5: 1.25rem;             // 20px
+$space-6: 1.5rem;              // 24px
+$space-8: 2rem;                // 32px
+$space-10: 2.5rem;             // 40px
+$space-12: 3rem;               // 48px
+
+$container-padding: 1.5rem;    // 24px
+$card-gap: 1rem;               // 16px
+$section-margin: 2rem;         // 32px
+$gutter: 1rem;                 // 16px
+
+// ---- Border Radius ----
+$radius-sm: 0.5rem;            // 8px
+$radius-default: 1rem;         // 16px
+$radius-md: 1.5rem;            // 24px
+$radius-lg: 2rem;              // 32px
+$radius-xl: 3rem;              // 48px
+$radius-full: 9999px;
+
+// ---- Shadows ----
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+$shadow-ambient: 0 4px 20px rgba(0, 0, 0, 0.04);
+$shadow-kpi: 0 10px 25px -5px rgba(0, 74, 153, 0.15);
+
+// ---- Transitions ----
+$transition-fast: 150ms ease;
+$transition-base: 200ms ease;
+$transition-slow: 300ms ease;
+
+// ---- Layout Sizes ----
+$sidebar-width: 260px;
+$header-height: 64px;
+$bottom-nav-height: 72px;
+$max-width: 1280px;
+
+// ---- Z-Index Scale ----
+$z-base: 0;
+$z-dropdown: 10;
+$z-sticky: 20;
+$z-fixed: 30;
+$z-modal-backdrop: 40;
+$z-modal: 50;
+$z-popover: 60;
+$z-tooltip: 70;
