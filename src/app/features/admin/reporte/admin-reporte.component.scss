@@ -2,11 +2,44 @@
 @use '../../../../styles/mixins' as *;
 
 .report-container {
-  max-width: 650px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
-// Efficiency highlight card
+// Tabs Navigation
+.tabs-container {
+  border-bottom: 1px solid rgba($color-outline-variant, 0.4);
+  gap: $space-2;
+  margin-bottom: $space-6;
+  
+  .tab-button {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: $color-on-surface-variant;
+    padding: $space-3 $space-6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    @include flex(row, center, center, $space-2);
+    
+    span {
+      font-size: 20px;
+    }
+    
+    &:hover {
+      color: $color-primary;
+      background-color: rgba($color-primary, 0.04);
+    }
+    
+    &.active {
+      color: $color-primary;
+      border-bottom-color: $color-primary;
+      font-weight: $weight-bold;
+    }
+  }
+}
+
+// Efficiency highlight card (Tab 1)
 .efficiency-card {
   background: linear-gradient(135deg, $color-primary-container 0%, $color-primary 100%);
   border-radius: $radius-default;
@@ -41,12 +74,76 @@
   }
 }
 
-// Table styling
+// Date selector card (Tab 2)
+.date-selector-card {
+  @include flex(row, space-between, center, $space-4);
+  background: $color-surface-container-lowest;
+  border: 1px solid rgba($color-outline-variant, 0.25);
+  border-radius: $radius-md;
+  box-shadow: $shadow-md;
+
+  .calendar-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba($color-primary, 0.08);
+    border-radius: $radius-default;
+    color: $color-primary;
+  }
+}
+
+.input-date-picker {
+  padding: $space-2 $space-4;
+  border-radius: $radius-default;
+  border: 1px solid rgba($color-outline-variant, 0.6);
+  font-family: inherit;
+  font-size: $text-body-md;
+  color: $color-on-surface;
+  background-color: $color-surface-container-lowest;
+  outline: none;
+  transition: border-color 0.2s ease;
+  min-width: 160px;
+
+  &:focus {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
+  }
+}
+
+// KPI Grid & Cards (Tab 2)
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: $space-4;
+
+  @media (min-width: 576px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 992px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.kpi-card {
+  background: $color-surface-container-lowest;
+  border: 1px solid rgba($color-outline-variant, 0.25);
+  border-radius: $radius-md;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
+}
+
+// Section layout
 .section-card {
   @include card(sm);
   border-radius: $radius-md;
   background: $color-surface-container-lowest;
   padding: $space-6;
+  border: 1px solid rgba($color-outline-variant, 0.25);
 }
 
 .table-wrap {
@@ -64,6 +161,7 @@
   th, td {
     padding: $space-4;
     border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    white-space: nowrap;
   }
 
   th {
@@ -73,6 +171,19 @@
 
   tr:last-child td {
     border-bottom: none;
+  }
+
+  &--nested {
+    font-size: $text-body-sm;
+    background-color: $color-surface-container-lowest;
+
+    th {
+      background: $color-surface-container-high;
+    }
+
+    td, th {
+      padding: $space-3 $space-4;
+    }
   }
 }
 
@@ -86,15 +197,79 @@
   background: $color-surface-container-lowest;
   padding: $space-4;
   border-left: 4px solid $color-error;
+  border-radius: $radius-default;
   
   .failed-reason {
     @include flex(row, flex-start, center, $space-2);
   }
 }
 
+// Monthly Accordion
+.monthly-accordion-item {
+  border: 1px solid rgba($color-outline-variant, 0.3);
+  border-radius: $radius-md;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .accordion-header {
+    background: $color-surface-container-lowest;
+    transition: background-color 0.2s ease;
+  }
+
+  .accordion-body {
+    background-color: rgba($color-surface-container-low, 0.25);
+    border-top: 1px solid rgba($color-outline-variant, 0.3);
+  }
+}
+
+// Status Badges
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-1 $space-3;
+  border-radius: $radius-full;
+  font-weight: $weight-bold;
+  line-height: 1;
+
+  &--success {
+    background-color: rgba($color-secondary, 0.12);
+    color: $color-secondary;
+  }
+
+  &--failed {
+    background-color: rgba($color-error, 0.12);
+    color: $color-error;
+  }
+
+  &--warn {
+    background-color: rgba($color-warning, 0.12);
+    color: $color-warning;
+  }
+
+  &--info {
+    background-color: rgba($color-primary, 0.1);
+    color: $color-primary;
+  }
+}
+
+// Loading Spinner
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba($color-primary, 0.1);
+  border-top-color: $color-primary;
+  border-radius: $radius-full;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .border-t {
   border-top: 1px solid rgba($color-outline-variant, 0.3);
 }
+
 .empty-state {
   @include flex-column(center, center, $space-2);
   padding: $space-6 0;
@@ -104,4 +279,25 @@
     font-size: 40px;
     color: $color-outline-variant;
   }
+}
+
+// Text color utilities
+.text-success {
+  color: $color-secondary;
+}
+.text-error {
+  color: $color-error;
+}
+.text-warning {
+  color: $color-warning;
+}
+
+.closed-day-banner {
+  background-color: rgba($color-secondary, 0.08);
+  border: 1px solid rgba($color-secondary, 0.25);
+  color: $color-secondary;
+  padding: $space-4;
+  border-radius: $radius-md;
+  @include flex(row, center, center, $space-3);
+  text-align: center;
 }

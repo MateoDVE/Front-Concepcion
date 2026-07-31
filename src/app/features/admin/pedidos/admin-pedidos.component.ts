@@ -115,4 +115,11 @@ export class AdminPedidosComponent implements OnInit {
     this.closeModal();
     this.router.navigate(['/admin/crear-pedido'], { queryParams: { orderId } });
   }
+
+  deleteOrder(orderId: string) {
+    if (confirm('¿Está seguro de que desea eliminar este pedido? Esta acción no se puede deshacer.')) {
+      this.stateService.deleteOrder(orderId);
+      this.closeModal();
+    }
+  }
 }

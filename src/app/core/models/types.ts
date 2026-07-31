@@ -35,6 +35,7 @@ export interface Order {
   id: string;
   clientId: string;
   clientName: string;
+  clientLocationUrl?: string;
   vendorId: string | null;
   vendorName: string | null;
   status: OrderStatus;

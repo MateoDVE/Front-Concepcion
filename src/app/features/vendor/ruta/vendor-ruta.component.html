@@ -84,7 +84,7 @@
 
         <!-- Cargado Actions: Mapa, Iniciar Entrega -->
         <ng-container *ngIf="order.status === 'loaded'">
-          <button (click)="openMap(order.clientName)" class="btn btn--outline flex-1 py-3">
+          <button (click)="openMap(order)" class="btn btn--outline flex-1 py-3">
             <span class="material-symbols-outlined text-sm">map</span> Mapa
           </button>
           <button (click)="startDelivery(order.id)" class="btn btn--primary flex-[1.5] py-3">
@@ -94,7 +94,7 @@
 
         <!-- Active Actions: Mapa, Entregar, Falla -->
         <ng-container *ngIf="order.status === 'route'">
-          <button (click)="openMap(order.clientName)" class="btn btn--outline flex-1 py-3" aria-label="Mapa">
+          <button (click)="openMap(order)" class="btn btn--outline flex-1 py-3" aria-label="Mapa">
             <span class="material-symbols-outlined text-sm">map</span>
           </button>
           <button (click)="markDelivered(order.id)" class="btn btn--success flex-[1.5] py-3">

@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { LandingComponent } from './features/landing/landing.component';
 import { AdminLayoutComponent } from './features/admin/layout/admin-layout.component';
 import { AdminDashboardComponent } from './features/admin/dashboard/admin-dashboard.component';
 import { AdminPedidosComponent } from './features/admin/pedidos/admin-pedidos.component';
@@ -16,7 +15,6 @@ import { LoginComponent } from './features/auth/login/login.component';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent },
-  { path: 'simulador', component: LandingComponent },
   
   // Admin Panel Routes
   {

@@ -107,19 +107,20 @@ export class AuthService {
   }
 
   public signOut(): Observable<void> {
-    const promise = this.supabase.auth.signOut();
-    return from(promise).pipe(
-      map(() => {
-        this.token = null;
-        this.currentUserSubject.next(null);
-        
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('concepcion_auth_token');
-          localStorage.removeItem('concepcion_auth_user');
-          // Limpiar también datos de ruta del vendedor simulados locales
-          localStorage.removeItem('concepcion_admin_data_ng');
-        }
-      })
-    );
+    this.token = null;
+    this.currentUserSubject.next(null);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('concepcion_auth_token');
+      localStorage.removeItem('concepcion_auth_user');
+    }
+
+    if (this.supabase) {
+      this.supabase.auth.signOut().catch(err => {
+        console.warn('Error calling Supabase signOut in background:', err);
+      });
+    }
+
+    return from(Promise.resolve());
   }
 }

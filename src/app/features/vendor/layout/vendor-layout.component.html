@@ -11,32 +11,27 @@
       <span class="header-title font-bold text-headline-md">Distribuidora Concepción</span>
     </div>
 
-    <!-- Active Vendor Avatar that opens simulation selector -->
+    <!-- Active Vendor Profile Menu -->
     <div class="header-right relative">
-      <button class="vendor-select-trigger" (click)="toggleSelector()" aria-label="Cambiar vendedor">
+      <button class="vendor-select-trigger" (click)="toggleSelector()" aria-label="Menu de usuario">
         <div class="vendor-avatar">{{ activeVendor?.avatar || 'VE' }}</div>
         <div class="vendor-details">
           <div class="vendor-name font-semibold">{{ activeVendor?.name }}</div>
-          <div class="vendor-role">Vendedor (Simulación) <span class="material-symbols-outlined text-sm">expand_more</span></div>
+          <div class="vendor-role">Vendedor <span class="material-symbols-outlined text-sm">expand_more</span></div>
         </div>
       </button>
 
-      <!-- Dropdown selector list -->
+      <!-- Dropdown list -->
       <div class="vendor-dropdown animate-fade-in" *ngIf="showVendorSelector">
-        <div class="dropdown-header text-label-md uppercase tracking-wider text-muted">Simular Vendedor</div>
-        <button *ngFor="let vendor of vendors" class="dropdown-item" (click)="selectVendor(vendor)" [class.active]="vendor.id === activeVendor?.id">
-          <div class="vendor-avatar vendor-avatar--sm">{{ vendor.avatar }}</div>
-          <span>{{ vendor.name }}</span>
-          <span class="material-symbols-outlined text-sm check-icon" *ngIf="vendor.id === activeVendor?.id">check</span>
-        </button>
+        <div class="dropdown-header text-label-md uppercase tracking-wider text-muted">Vendedor</div>
+        <div class="dropdown-item active">
+          <div class="vendor-avatar vendor-avatar--sm">{{ activeVendor?.avatar || 'VE' }}</div>
+          <span>{{ activeVendor?.name }}</span>
+        </div>
         <div class="dropdown-divider"></div>
-        <button class="dropdown-item dropdown-item--danger" (click)="resetData(); toggleSelector()">
-          <span class="material-symbols-outlined text-sm">restart_alt</span>
-          <span>Reiniciar Datos</span>
-        </button>
-        <button class="dropdown-item dropdown-item--exit" (click)="logout(); toggleSelector()">
+        <button class="dropdown-item dropdown-item--exit" (click)="logout()">
           <span class="material-symbols-outlined text-sm">logout</span>
-          <span>Salir de Rol</span>
+          <span>Cerrar Sesión</span>
         </button>
       </div>
     </div>

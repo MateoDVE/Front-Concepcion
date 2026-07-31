@@ -26,22 +26,6 @@ export class AdminLayoutComponent {
     this.isMobileSidebarOpen = false;
   }
 
-  resetData() {
-    if (confirm('¿Estás seguro de que deseas reiniciar los datos predeterminados?')) {
-      this.stateService.resetData();
-      alert('Datos reiniciados.');
-      this.router.navigate(['/admin/dashboard']);
-    }
-  }
-
-  clearLocalData() {
-    if (confirm('¿Deseas limpiar todos los datos guardados en LocalStorage?')) {
-      this.stateService.clearLocalData();
-      alert('Datos de LocalStorage limpiados.');
-      this.router.navigate(['/admin/dashboard']);
-    }
-  }
-
   logout() {
     this.authService.signOut().subscribe(() => {
       this.router.navigate(['/']);

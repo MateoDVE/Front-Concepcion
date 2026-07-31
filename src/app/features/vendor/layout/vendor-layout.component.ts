@@ -17,12 +17,10 @@ export class VendorLayoutComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
 
-  vendors: Vendor[] = [];
   activeVendor: Vendor | null = null;
   showVendorSelector = false;
 
   ngOnInit() {
-    this.stateService.vendors$.subscribe(v => this.vendors = v);
     this.stateService.activeVendor$.subscribe(av => this.activeVendor = av);
   }
 
@@ -30,24 +28,8 @@ export class VendorLayoutComponent implements OnInit {
     this.showVendorSelector = !this.showVendorSelector;
   }
 
-  selectVendor(vendor: Vendor) {
-    this.stateService.setActiveVendor(vendor);
-    this.showVendorSelector = false;
-    // Reload page/view to update deliveries
-    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
-      this.router.navigate(['/vendor/ruta']);
-    });
-  }
-
-  resetData() {
-    if (confirm('¿Reiniciar datos del vendedor?')) {
-      this.stateService.resetData();
-      alert('Datos locales reiniciados');
-      location.reload();
-    }
-  }
-
   logout() {
+    this.showVendorSelector = false;
     this.authService.signOut().subscribe(() => {
       this.router.navigate(['/']);
     });

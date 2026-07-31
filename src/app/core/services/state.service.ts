@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, forkJoin } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Client, Product, Vendor, Order, OrderStatus, KPIs } from '../models/types';
 import { APP_CONFIG } from '../config/constants';
@@ -77,7 +77,7 @@ export class StateService {
         const mappedVendors = dbVendors.map(v => this.mapVendor(v));
         this.vendorsSubject.next(mappedVendors);
 
-        // Auto-select simulated vendor if logged-in user is a vendor
+        // Match the logged-in user to their vendor profile
         const matchingVendor = mappedVendors.find(v => v.usuario_id === this.authService.userId);
         if (matchingVendor) {
           this.activeVendorSubject.next(matchingVendor);
@@ -148,6 +148,7 @@ export class StateService {
       id: db.id,
       clientId: db.cliente_id,
       clientName: db.cliente?.nombre || 'Cliente Desconocido',
+      clientLocationUrl: db.cliente?.ubicacion_url || (db.cliente?.direccion ? `https://maps.google.com/?q=${encodeURIComponent(db.cliente.direccion)}` : undefined),
       vendorId: db.vendedor_id,
       vendorName: db.vendedor?.nombre || null,
       status: db.estado as OrderStatus,
@@ -164,10 +165,7 @@ export class StateService {
     };
   }
 
-  // ---- Simulation Active Conductor Selector ----
-  public setActiveVendor(vendor: Vendor): void {
-    this.activeVendorSubject.next(vendor);
-  }
+
 
   // ---- Mutators (HTTP Actions) ----
 
@@ -224,7 +222,7 @@ export class StateService {
       detalles: orderData.items.map((item: any) => ({
         producto_id: item.productId,
         cantidad: item.quantity,
-        precio_applied: item.price // will fall back to suggested price on backend if mismatch
+        precio_aplicado: item.price
       }))
     };
     this.http.post<any>(`${APP_CONFIG.apiUrl}/orders`, body).subscribe({
@@ -270,8 +268,18 @@ export class StateService {
     });
   }
 
+  deleteOrder(orderId: string): void {
+    this.http.delete<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}`).subscribe({
+      next: () => {
+        this.loadOrders();
+        this.loadProducts();
+      },
+      error: (err) => console.error('Error deleting order', err)
+    });
+  }
+
   // ---- Closing Day operability ----
-  resetData(): void {
+  resetData(): Observable<any> {
     // Perform daily closures on the backend for each vendor that has orders today
     const orders = this.ordersSubject.value;
     const vendors = this.vendorsSubject.value;
@@ -305,13 +313,15 @@ export class StateService {
     });
 
     if (closures.length > 0) {
-      forkJoin(closures).subscribe({
-        next: () => {
+      return forkJoin(closures).pipe(
+        map(res => {
           this.loadOrders();
           this.loadProducts();
-        },
-        error: (err) => console.error('Error sending closures', err)
-      });
+          return res;
+        })
+      );
+    } else {
+      return of([]);
     }
   }
 
@@ -338,5 +348,13 @@ export class StateService {
     if (typeof window !== 'undefined') {
       localStorage.clear();
     }
+  }
+
+  getDailyReport(date: string): Observable<any[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/closings/report/daily?fecha=${date}`);
+  }
+
+  getHistoryReport(): Observable<any[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/closings/report/history`);
   }
 }

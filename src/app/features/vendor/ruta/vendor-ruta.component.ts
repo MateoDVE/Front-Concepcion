@@ -112,8 +112,8 @@ export class VendorRutaComponent implements OnInit {
     this.closeFailModal();
   }
 
-  openMap(address: string) {
-    const url = `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+  openMap(order: Order) {
+    const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(order.clientName)}`;
     window.open(url, '_blank');
   }
 }
