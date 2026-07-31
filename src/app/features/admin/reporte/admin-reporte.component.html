@@ -1,0 +1,108 @@
+<div class="container animate-fade-in pb-12">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <h2 class="text-headline-xl text-primary">Cierre y Reportes</h2>
+    <p class="text-muted text-body-md">Visualiza el balance consolidado de la jornada operativa.</p>
+  </div>
+
+  <div class="report-container space-y-6">
+    <!-- Financial & Efficiency Highlight Card -->
+    <section class="efficiency-card relative overflow-hidden rounded-lg p-6 bg-primary-container text-on-primary-container shadow-lg">
+      <div class="bg-blur-accent"></div>
+      <div class="relative z-10 space-y-4">
+        <div>
+          <p class="text-caption uppercase tracking-wider opacity-80 mb-1">Total Recaudado del Día</p>
+          <h2 class="text-[40px] font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
+        </div>
+
+        <div class="progress-bar-wrap">
+          <div class="flex justify-between items-center text-caption mb-1">
+            <span>Efectividad Operativa</span>
+            <span class="font-bold">{{ efficiencyRate }}%</span>
+          </div>
+          <div class="w-full h-3 bg-white/20 rounded-full overflow-hidden">
+            <div class="h-full bg-secondary-container rounded-full" [style.width.%]="efficiencyRate"></div>
+          </div>
+        </div>
+
+        <div class="metrics-summary-grid flex justify-between items-center pt-2">
+          <div>
+            <span class="text-caption opacity-85 block">Entregados</span>
+            <span class="font-bold text-body-lg text-white">{{ deliveredCount }}</span>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <span class="text-caption opacity-85 block">Fallidos</span>
+            <span class="font-bold text-body-lg text-white">{{ failedCount }}</span>
+          </div>
+          <div class="divider"></div>
+          <div>
+            <span class="text-caption opacity-85 block">Pendientes</span>
+            <span class="font-bold text-body-lg text-white">{{ pendingCount }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Tally Section -->
+    <section class="section-card">
+      <h3 class="text-headline-md font-semibold text-primary mb-4">Resumen de Carga y Ventas</h3>
+      
+      <div *ngIf="productSummaries.length === 0" class="empty-state">
+        <span class="material-symbols-outlined empty-icon">shopping_cart_checkout</span>
+        <p class="text-muted text-body-sm">Aún no se han consolidado ventas de productos hoy.</p>
+      </div>
+
+      <div class="table-wrap" *ngIf="productSummaries.length > 0">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th class="text-left text-caption uppercase text-muted">Producto</th>
+              <th class="text-center text-caption uppercase text-muted">Unidades Vendidas</th>
+              <th class="text-right text-caption uppercase text-muted">Ingreso Producido</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let summary of productSummaries">
+              <td class="font-semibold text-body-sm">{{ summary.name }}</td>
+              <td class="text-center text-body-sm font-medium">{{ summary.quantitySold }} {{ summary.unit }}s</td>
+              <td class="text-right text-body-sm font-bold text-primary">{{ formatCurrency(summary.totalRevenue) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Incidents Section -->
+    <section class="section-card">
+      <h3 class="text-headline-md font-semibold text-primary mb-4">Resumen de Incidencias / Fallas</h3>
+      
+      <div *ngIf="failedOrders.length === 0" class="empty-state">
+        <span class="material-symbols-outlined empty-icon">verified</span>
+        <p class="text-muted text-body-sm">¡Excelente! No se registraron entregas fallidas hoy.</p>
+      </div>
+
+      <div class="failed-list space-y-3" *ngIf="failedOrders.length > 0">
+        <div *ngFor="let order of failedOrders" class="failed-item p-4 border rounded-lg animate-slide-up flex flex-col gap-2">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
+              <span class="text-caption text-muted block">{{ order.id }} • {{ order.vendorName }}</span>
+            </div>
+            <span class="badge badge--failed">Fallido</span>
+          </div>
+          <div class="failed-reason p-3 bg-error-container/30 border border-error-container/40 rounded-lg text-error text-body-sm font-medium">
+            <span class="material-symbols-outlined text-sm">warning</span> Motivo: {{ order.failedReason || 'No especificado' }}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day Close Action -->
+    <section class="close-day-section pt-6 border-t">
+      <button class="btn btn--primary btn--full py-4 text-body-md" (click)="closeDay()">
+        <span class="material-symbols-outlined">lock</span> Realizar Cierre de Jornada (Reiniciar)
+      </button>
+    </section>
+  </div>
+</div>

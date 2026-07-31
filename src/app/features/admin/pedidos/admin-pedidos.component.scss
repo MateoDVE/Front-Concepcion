@@ -1,0 +1,307 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.controls-card {
+  @include card(sm);
+  border-radius: $radius-default;
+  padding: $space-5;
+}
+
+.search-bar-wrap {
+  position: relative;
+  width: 100%;
+
+  .search-icon {
+    position: absolute;
+    left: $space-4;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $color-outline;
+    font-size: 20px;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: $space-4 $space-4 $space-4 $space-10;
+    border-radius: $radius-full;
+    background: $color-surface-container-low;
+    border: 1px solid rgba($color-outline-variant, 0.4);
+    font-size: $text-body-sm;
+    transition: all $transition-fast;
+
+    &:focus {
+      background: $color-surface-container-lowest;
+      border-color: $color-primary-container;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+.filter-chips {
+  @include flex(row, flex-start, center, $space-2);
+  overflow-x: auto;
+  padding-bottom: $space-1;
+  -webkit-overflow-scrolling: touch;
+  
+  &::-webkit-scrollbar {
+    display: none; // Hide scrollbar for a clean design
+  }
+
+  .chip {
+    padding: $space-2 $space-4;
+    border-radius: $radius-full;
+    font-size: $text-label-md;
+    font-weight: $weight-bold;
+    border: 1px solid rgba($color-outline-variant, 0.35);
+    background: $color-surface-container-lowest;
+    color: $color-on-surface-variant;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+
+    &.active {
+      background: $color-primary;
+      color: $color-on-primary;
+      border-color: transparent;
+      box-shadow: $shadow-sm;
+    }
+
+    // Specific chips styling on active
+    &--pending.active {
+      background: $color-warning;
+      color: $color-on-warning;
+    }
+
+    &--route.active {
+      background: $color-primary-container;
+      color: $color-on-primary;
+    }
+
+    &--delivered.active {
+      background: $color-secondary;
+      color: $color-on-secondary;
+    }
+
+    &--failed.active {
+      background: $color-error;
+      color: $color-on-error;
+    }
+  }
+}
+
+// Reuse dashboard styles for recent orders
+.section-card {
+  @include card(sm);
+  border-radius: $radius-md;
+  background: $color-surface-container-lowest;
+  padding: $space-6;
+}
+
+.order-list {
+  @include flex-column(flex-start, stretch, 0);
+}
+
+.order-item {
+  @include flex(row, space-between, center, $space-4);
+  padding: $space-4 0;
+  border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+  cursor: pointer;
+  transition: background $transition-fast, padding-left $transition-fast;
+
+  &:hover {
+    background: rgba($color-surface-container-low, 0.35);
+    padding-left: $space-2;
+
+    .order-chevron {
+      color: $color-primary;
+      transform: translateX(2px);
+    }
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .order-left {
+    @include flex(row, flex-start, center, $space-4);
+    min-width: 0;
+  }
+
+  .order-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: $radius-full;
+    background: rgba($color-primary-container, 0.12);
+    color: $color-primary-container;
+    font-weight: $weight-bold;
+    font-size: $text-label-lg;
+    @include flex-center();
+    flex-shrink: 0;
+  }
+
+  .order-info {
+    min-width: 0;
+    
+    .order-client {
+      color: $color-on-surface;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .order-meta {
+    @include flex(row, flex-end, center, $space-5);
+    flex-shrink: 0;
+
+    .order-totals {
+      @include flex-column(center, flex-end, 0);
+      text-align: right;
+    }
+
+    .order-time {
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .order-chevron {
+      color: $color-outline;
+      transition: transform $transition-fast, color $transition-fast;
+    }
+  }
+}
+
+// FAB Floating Button
+.fab {
+  position: fixed;
+  bottom: calc(#{$bottom-nav-height} + #{$space-5});
+  right: $space-6;
+  width: 56px;
+  height: 56px;
+  border-radius: $radius-full;
+  background: linear-gradient(135deg, $color-primary-container 0%, $color-primary 100%);
+  color: $color-on-primary;
+  @include flex-center();
+  box-shadow: $shadow-lg;
+  transition: transform $transition-fast, box-shadow $transition-fast;
+  z-index: $z-fixed;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba($color-primary-container, 0.4);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  .material-symbols-outlined {
+    font-size: 28px;
+  }
+
+  @include desktop {
+    bottom: $space-6;
+  }
+}
+
+// Modal Styles
+.modal-backdrop-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  @include flex-center();
+  padding: $space-4;
+}
+
+.modal-backdrop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background: $color-surface-container-lowest;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: $space-6;
+  z-index: 10;
+  border: 1px solid rgba($color-outline-variant, 0.45);
+
+  .modal-close-btn {
+    color: $color-outline;
+    @include flex-center();
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+  }
+
+  .modal-header {
+    @include flex(row, space-between, center, $space-4);
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    padding-bottom: $space-3;
+  }
+
+  .detail-block {
+    @include flex-column(center, flex-start, 0);
+
+    .detail-label {
+      font-weight: $weight-bold;
+      letter-spacing: 0.05em;
+    }
+
+    .detail-value {
+      color: $color-on-surface;
+    }
+  }
+
+  .products-breakdown {
+    width: 100%;
+    @include flex-column(flex-start, stretch, $space-2);
+  }
+
+  .product-row {
+    @include flex(row, space-between, center, $space-4);
+    
+    .product-name {
+      color: $color-on-surface;
+    }
+    .product-math {
+      color: $color-on-surface-variant;
+    }
+  }
+
+  .border-t {
+    border-top: 1px solid rgba($color-outline-variant, 0.25);
+  }
+}
+
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  padding: $space-8 0;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 48px;
+    color: $color-outline-variant;
+  }
+}

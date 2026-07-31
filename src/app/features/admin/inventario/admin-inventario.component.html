@@ -1,0 +1,133 @@
+<div class="container animate-fade-in pb-12">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <h2 class="text-headline-xl text-primary">Inventario y Precios</h2>
+    <p class="text-muted text-body-md">Consulta el stock disponible y gestiona las tarifas base de los productos.</p>
+  </div>
+
+  <!-- Products Catalog Grid -->
+  <section class="products-grid">
+    <!-- Product Card Item -->
+    <div *ngFor="let product of products" (click)="openEditModal(product)" class="product-card animate-slide-up">
+      <div class="product-card-header">
+        <span class="material-symbols-outlined product-icon">icecream</span>
+        <h3 class="name font-bold text-body-md text-primary">{{ product.name }}</h3>
+      </div>
+      <div class="product-card-body space-y-2">
+        <div class="flex justify-between items-center text-body-sm">
+          <span class="text-muted">Precio Base:</span>
+          <span class="font-bold text-primary">{{ formatCurrency(product.basePrice) }}</span>
+        </div>
+        <div class="flex justify-between items-center text-body-sm">
+          <span class="text-muted">Stock actual:</span>
+          <span class="font-bold" [ngClass]="{'stock-warning': product.stock < 50}">
+            {{ product.stock }} {{ product.unit }}s
+          </span>
+        </div>
+      </div>
+      <div class="product-card-footer border-t pt-3 flex justify-between items-center">
+        <button class="action-link text-body-sm font-semibold">
+          <span class="material-symbols-outlined text-sm">edit</span> Editar Stock/Precio
+        </button>
+        <span class="material-symbols-outlined chevron">chevron_right</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAB -->
+  <button class="fab shadow-lg" (click)="openAddModal()" aria-label="Agregar producto">
+    <span class="material-symbols-outlined">add_box</span>
+  </button>
+
+  <!-- Add Product Form Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showAddModal">
+    <div class="modal-backdrop-overlay" (click)="closeAddModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Registrar Producto</h3>
+        <button class="modal-close-btn" (click)="closeAddModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Nombre del Producto *</label>
+          <input type="text" [(ngModel)]="newProdName" class="form-input w-full" placeholder="Ej. Hielo Picado 5kg" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
+          <input type="number" [(ngModel)]="newProdPrice" class="form-input w-full" placeholder="Ej. 15.00" min="0.1" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Stock Inicial *</label>
+          <input type="number" [(ngModel)]="newProdStock" class="form-input w-full" placeholder="Ej. 100" min="0" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Unidad de Medida *</label>
+          <select [(ngModel)]="newProdUnit" class="form-select w-full">
+            <option value="bolsa">Bolsa</option>
+            <option value="bidon">Bidón</option>
+            <option value="pack">Pack / Pack x6</option>
+            <option value="unidad">Unidad</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeAddModal()">Cancelar</button>
+        <button class="btn btn--primary flex-[1.5]" (click)="saveProduct()">
+          <span class="material-symbols-outlined">save</span> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Product Form Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal && selectedProduct">
+    <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Ajustar Inventario</h3>
+        <button class="modal-close-btn" (click)="closeEditModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="material-symbols-outlined text-[32px] text-primary">icecream</span>
+          <div>
+            <h4 class="font-bold text-body-lg text-primary">{{ selectedProduct.name }}</h4>
+            <p class="text-caption text-muted">Stock actual: {{ selectedProduct.stock }} {{ selectedProduct.unit }}s</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
+          <input type="number" [(ngModel)]="editProdPrice" class="form-input w-full" min="0.1" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Reabastecer Stock (Añadir cantidad)</label>
+          <input type="number" [(ngModel)]="editProdAddStock" class="form-input w-full" placeholder="Introduce valor positivo o negativo..." />
+          <span class="text-caption text-muted mt-1 block">
+            Ej: ingresa 50 para sumar, o -10 para restar del stock actual.
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeEditModal()">Cancelar</button>
+        <button class="btn btn--primary flex-[1.5]" (click)="saveEditProduct()">
+          <span class="material-symbols-outlined">check_circle</span> Actualizar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,169 @@
+<div class="container animate-fade-in">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <h2 class="text-headline-xl text-primary">Resumen Operativo</h2>
+    <p class="text-muted text-body-md">Visión general del flujo logístico en tiempo real.</p>
+  </div>
+
+  <!-- Metrics Bento Grid -->
+  <section class="kpi-grid mb-6">
+    <!-- Metric: Pendientes -->
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="material-symbols-outlined icon-bg warning">inventory_2</span>
+        <span class="kpi-trend trend-neutral">Hoy</span>
+      </div>
+      <div>
+        <h3 class="kpi-label uppercase text-label-md">Pendientes</h3>
+        <p class="kpi-value text-primary font-bold">{{ kpis.pending }}</p>
+      </div>
+    </div>
+
+    <!-- Metric: En Ruta (Highlight!) -->
+    <div class="kpi-card kpi-card--highlight">
+      <div class="kpi-header">
+        <span class="material-symbols-outlined icon-bg info">local_shipping</span>
+        <span class="kpi-trend trend-active">Activo</span>
+      </div>
+      <div>
+        <h3 class="kpi-label uppercase text-label-md">En Ruta</h3>
+        <p class="kpi-value text-white font-bold">{{ kpis.inRoute }}</p>
+      </div>
+    </div>
+
+    <!-- Metric: Entregas -->
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="material-symbols-outlined icon-bg success">task_alt</span>
+        <span class="kpi-trend trend-success">Completado</span>
+      </div>
+      <div>
+        <h3 class="kpi-label uppercase text-label-md">Entregas</h3>
+        <p class="kpi-value text-primary font-bold">{{ kpis.delivered }}</p>
+      </div>
+    </div>
+
+    <!-- Metric: Total Recaudado -->
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="material-symbols-outlined icon-bg primary">payments</span>
+        <span class="kpi-trend trend-success">Rendimiento</span>
+      </div>
+      <div>
+        <h3 class="kpi-label uppercase text-label-md">Total Hoy</h3>
+        <p class="kpi-value text-primary font-bold">{{ formatCurrency(kpis.totalRevenue) }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Orders Section -->
+  <section class="section-card">
+    <div class="section-header mb-4">
+      <h3 class="text-headline-md font-semibold text-primary">Pedidos Recientes</h3>
+      <a routerLink="/admin/pedidos" class="view-all-link font-semibold text-body-sm">Ver todos</a>
+    </div>
+
+    <div class="order-list">
+      <div *ngIf="recentOrders.length === 0" class="empty-state">
+        <span class="material-symbols-outlined empty-icon">inbox</span>
+        <p class="text-muted">No hay pedidos registrados hoy.</p>
+        <a routerLink="/admin/crear-pedido" class="btn btn--primary mt-4">Crear Primer Pedido</a>
+      </div>
+
+      <div *ngFor="let order of recentOrders" (click)="showOrderDetail(order)" class="order-item">
+        <div class="order-left">
+          <div class="order-avatar">{{ getClientInitials(order.clientName) }}</div>
+          <div class="order-info">
+            <div class="order-client font-bold text-body-md">{{ order.clientName }}</div>
+            <div class="order-id text-caption text-muted">{{ order.id }}</div>
+          </div>
+        </div>
+
+        <div class="order-meta">
+          <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">{{ getStatusLabel(order.status) }}</span>
+          <div class="order-totals">
+            <span class="order-amount font-bold text-body-md">{{ formatCurrency(order.total) }}</span>
+            <span class="order-time text-caption text-muted">{{ formatDate(order.deliveredAt || order.createdAt) }}</span>
+          </div>
+          <span class="material-symbols-outlined order-chevron">chevron_right</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAB floating action button -->
+  <a routerLink="/admin/crear-pedido" class="fab shadow-lg" aria-label="Crear pedido">
+    <span class="material-symbols-outlined">add</span>
+  </a>
+
+  <!-- Order Detail Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="selectedOrder">
+    <div class="modal-backdrop-overlay" (click)="closeModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.id }}</h3>
+        <button class="modal-close-btn" (click)="closeModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <!-- Client Detail -->
+        <div class="detail-block">
+          <span class="detail-label text-caption text-muted uppercase">Cliente</span>
+          <p class="detail-value font-bold text-body-lg">{{ selectedOrder.clientName }}</p>
+        </div>
+
+        <!-- Vendor Detail -->
+        <div class="detail-block">
+          <span class="detail-label text-caption text-muted uppercase">Vendedor Asignado</span>
+          <p class="detail-value font-semibold text-body-md">{{ selectedOrder.vendorName || 'Sin asignar' }}</p>
+        </div>
+
+        <!-- Status Badge -->
+        <div class="detail-block">
+          <span class="detail-label text-caption text-muted uppercase mb-1">Estado de la Entrega</span>
+          <div>
+            <span class="badge" [ngClass]="getStatusBadgeClass(selectedOrder.status)">{{ getStatusLabel(selectedOrder.status) }}</span>
+          </div>
+          <p *ngIf="selectedOrder.failedReason" class="text-error text-body-sm mt-1 font-medium">
+            Motivo: {{ selectedOrder.failedReason }}
+          </p>
+        </div>
+
+        <!-- Products List -->
+        <div class="detail-block pt-4 border-t">
+          <span class="detail-label text-caption text-muted uppercase mb-2">Desglose de Productos</span>
+          <div class="products-breakdown">
+            <div *ngFor="let item of selectedOrder.items" class="product-row">
+              <span class="product-name text-body-sm">{{ item.name }}</span>
+              <span class="product-math text-body-sm font-medium">
+                {{ item.quantity }} x {{ formatCurrency(item.price) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Price -->
+        <div class="detail-block pt-4 border-t flex justify-between items-center">
+          <span class="text-headline-md font-bold text-primary">Total</span>
+          <span class="text-headline-xl font-bold text-primary">{{ formatCurrency(selectedOrder.total) }}</span>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeModal()">Cerrar</button>
+        
+        <button *ngIf="selectedOrder.status === 'pending'" class="btn btn--primary flex-[1.5]" (click)="editOrder(selectedOrder.id)">
+          <span class="material-symbols-outlined">edit</span> Editar Pedido
+        </button>
+
+        <button *ngIf="selectedOrder.status === 'failed'" class="btn btn--primary flex-[1.5]" (click)="reopenOrder(selectedOrder.id)">
+          <span class="material-symbols-outlined">autorenew</span> Reabrir Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

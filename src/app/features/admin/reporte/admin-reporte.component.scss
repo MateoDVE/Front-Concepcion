@@ -1,0 +1,107 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.report-container {
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+// Efficiency highlight card
+.efficiency-card {
+  background: linear-gradient(135deg, $color-primary-container 0%, $color-primary 100%);
+  border-radius: $radius-default;
+  border-color: transparent;
+  box-shadow: $shadow-kpi;
+
+  .bg-blur-accent {
+    position: absolute;
+    top: -48px;
+    right: -48px;
+    width: 192px;
+    height: 192px;
+    background: rgba($color-on-primary-container, 0.15);
+    border-radius: $radius-full;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  .progress-bar-wrap {
+    background: rgba(255, 255, 255, 0.08);
+    padding: $space-3 $space-4;
+    border-radius: $radius-default;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .metrics-summary-grid {
+    .divider {
+      width: 1px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// Table styling
+.section-card {
+  @include card(sm);
+  border-radius: $radius-md;
+  background: $color-surface-container-lowest;
+  padding: $space-6;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba($color-outline-variant, 0.3);
+  border-radius: $radius-default;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: $space-4;
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+  }
+
+  th {
+    background: $color-surface-container-low;
+    font-weight: $weight-bold;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// Failed items / incidents
+.failed-list {
+  @include flex-column(flex-start, stretch, $space-3);
+}
+
+.failed-item {
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  background: $color-surface-container-lowest;
+  padding: $space-4;
+  border-left: 4px solid $color-error;
+  
+  .failed-reason {
+    @include flex(row, flex-start, center, $space-2);
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.3);
+}
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  padding: $space-6 0;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 40px;
+    color: $color-outline-variant;
+  }
+}
