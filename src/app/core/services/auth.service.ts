@@ -10,7 +10,7 @@ export interface AuthUser {
   id: string;
   usuario: string;
   nombre: string;
-  rol: 'admin' | 'vendedor';
+  rol: 'admin' | 'vendedor' | 'almacen';
   activo: boolean;
   email?: string;
 }
@@ -56,7 +56,7 @@ export class AuthService {
     return this.currentUserSubject.value !== null;
   }
 
-  public get userRole(): 'admin' | 'vendedor' | null {
+  public get userRole(): 'admin' | 'vendedor' | 'almacen' | null {
     return this.currentUserSubject.value?.rol || null;
   }
 
