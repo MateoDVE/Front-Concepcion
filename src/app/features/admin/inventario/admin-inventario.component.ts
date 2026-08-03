@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Product } from '../../../core/models/types';
+import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
 
 @Component({
   selector: 'app-admin-inventario',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent],
   templateUrl: './admin-inventario.component.html',
   styleUrl: './admin-inventario.component.scss',
   standalone: true
@@ -31,6 +32,12 @@ export class AdminInventarioComponent implements OnInit {
   editProdPrice = 0;
   editProdAddStock = 0;
 
+  showFeedbackModal = false;
+  feedbackTitle = '';
+  feedbackMessage = '';
+  feedbackTone: 'info' | 'success' | 'warning' | 'error' = 'info';
+  private feedbackAfterClose: (() => void) | null = null;
+
   ngOnInit() {
     this.stateService.products$.subscribe(p => this.products = p);
   }
@@ -51,9 +58,24 @@ export class AdminInventarioComponent implements OnInit {
     this.showAddModal = false;
   }
 
+
+  openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {
+    this.feedbackTitle = title;
+    this.feedbackMessage = message;
+    this.feedbackTone = tone;
+    this.feedbackAfterClose = afterClose || null;
+    this.showFeedbackModal = true;
+  }
+
+  closeFeedbackModal() {
+    this.showFeedbackModal = false;
+    const afterClose = this.feedbackAfterClose;
+    this.feedbackAfterClose = null;
+    afterClose?.();
+  }
   saveProduct() {
     if (!this.newProdName.trim() || this.newProdPrice <= 0 || this.newProdStock < 0) {
-      alert('Por favor completa los campos con valores válidos (precio > 0, stock >= 0).');
+      this.openFeedbackModal('Campos inválidos', 'Por favor completa los campos con valores válidos (precio > 0, stock >= 0).', 'warning');
       return;
     }
 
@@ -64,8 +86,8 @@ export class AdminInventarioComponent implements OnInit {
       this.newProdUnit
     );
 
-    alert('Producto registrado con éxito.');
     this.closeAddModal();
+    this.openFeedbackModal('Producto registrado', 'Producto registrado con éxito.', 'success');
   }
 
   openEditModal(product: Product) {
@@ -84,7 +106,7 @@ export class AdminInventarioComponent implements OnInit {
     if (!this.selectedProduct) return;
 
     if (this.editProdPrice <= 0) {
-      alert('Por favor introduce un precio base válido.');
+      this.openFeedbackModal('Precio inválido', 'Por favor introduce un precio base válido.', 'warning');
       return;
     }
 
@@ -98,7 +120,7 @@ export class AdminInventarioComponent implements OnInit {
       this.stateService.updateProductStock(this.selectedProduct.id, this.editProdAddStock);
     }
 
-    alert('Inventario actualizado con éxito.');
     this.closeEditModal();
+    this.openFeedbackModal('Inventario actualizado', 'Inventario actualizado con éxito.', 'success');
   }
 }

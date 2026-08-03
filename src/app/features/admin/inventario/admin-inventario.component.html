@@ -130,4 +130,12 @@
       </div>
     </div>
   </div>
+
+  <app-feedback-modal
+    [open]="showFeedbackModal"
+    [title]="feedbackTitle"
+    [message]="feedbackMessage"
+    [tone]="feedbackTone"
+    (closed)="closeFeedbackModal()">
+  </app-feedback-modal>
 </div>

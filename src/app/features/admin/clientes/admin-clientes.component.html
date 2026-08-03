@@ -29,7 +29,10 @@
       <div class="client-card-header">
         <div class="avatar">{{ getClientInitials(client.name) }}</div>
         <div class="meta">
-          <h3 class="name font-bold text-body-md text-primary">{{ client.name }}</h3>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="name font-bold text-body-md text-primary">{{ client.name }}</h3>
+            <span *ngIf="client.clientType" class="client-type-badge client-type-badge--{{ client.clientType.toLowerCase() }}">{{ client.clientType }}</span>
+          </div>
           <span class="phone text-caption text-muted flex items-center gap-1">
             <span class="material-symbols-outlined text-sm">call</span> {{ client.phone }}
           </span>
@@ -86,6 +89,16 @@
           <label class="text-caption text-muted uppercase">Enlace de Google Maps (Opcional)</label>
           <input type="text" [(ngModel)]="newClientLocationUrl" class="form-input w-full" placeholder="Ej. https://maps.google.com/..." />
         </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Tipo de Cliente *</label>
+          <select [(ngModel)]="newClientType" class="form-select w-full">
+            <option value="Particular">Particular</option>
+            <option value="Minimarket">Minimarket</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Distribuidor">Distribuidor</option>
+          </select>
+        </div>
       </div>
 
       <div class="modal-footer mt-6 flex gap-4">
@@ -113,8 +126,11 @@
         <div class="client-profile-header flex gap-4 items-center">
           <div class="avatar-large">{{ getClientInitials(selectedClient.name) }}</div>
           <div>
-            <h4 class="text-headline-md font-bold">{{ selectedClient.name }}</h4>
-            <p class="text-body-sm text-muted flex items-center gap-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-headline-md font-bold">{{ selectedClient.name }}</h4>
+              <span *ngIf="selectedClient.clientType" class="client-type-badge client-type-badge--{{ selectedClient.clientType.toLowerCase() }}">{{ selectedClient.clientType }}</span>
+            </div>
+            <p class="text-body-sm text-muted flex items-center gap-1 mt-1">
               <span class="material-symbols-outlined text-sm">call</span> {{ selectedClient.phone }}
             </p>
           </div>
@@ -125,6 +141,45 @@
           <button class="btn btn--outline btn--full mt-2" (click)="openMap(selectedClient.locationUrl)">
             <span class="material-symbols-outlined">location_on</span> Ver Ubicación en Maps
           </button>
+        </div>
+
+        <!-- Special Prices Section -->
+        <div class="special-prices-section pt-4 border-t">
+          <h4 class="text-label-lg uppercase tracking-wider text-muted mb-3 font-semibold">Precios Especiales de Venta</h4>
+
+          <div *ngIf="specialPrices.length === 0" class="empty-state empty-state--small">
+            <p class="text-muted text-body-sm">No tiene precios especiales configurados.</p>
+          </div>
+
+          <div *ngIf="specialPrices.length > 0" class="special-prices-list space-y-2 mb-4">
+            <div *ngFor="let sp of specialPrices" class="special-price-item p-3 border rounded-lg flex justify-between items-center">
+              <div>
+                <span class="text-body-sm font-bold block text-primary">{{ getProductName(sp.producto_id) }}</span>
+                <span class="text-caption text-muted">Precio Especial: {{ formatCurrency(sp.precio_especial) }}</span>
+              </div>
+              <button class="delete-btn text-error hover:opacity-100 opacity-70" (click)="deleteSpecialPrice(sp.producto_id)" aria-label="Eliminar precio especial">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Special Price Form -->
+          <div class="special-price-form">
+            <div class="form-group flex-1">
+              <label class="text-caption text-muted uppercase">Producto</label>
+              <select [(ngModel)]="newSpecialPriceProductId" class="form-select w-full">
+                <option value="" disabled selected>Selecciona producto...</option>
+                <option *ngFor="let prod of products" [value]="prod.id">{{ prod.name }} ({{ formatCurrency(prod.basePrice) }})</option>
+              </select>
+            </div>
+            <div class="form-group flex-[0.7]">
+              <label class="text-caption text-muted uppercase">Precio Especial</label>
+              <input type="number" [(ngModel)]="newSpecialPriceValue" placeholder="0.00" class="form-input w-full" min="0" step="0.5" />
+            </div>
+            <button class="btn btn-add-price flex items-center justify-center gap-1" (click)="addSpecialPrice()">
+              <span class="material-symbols-outlined text-sm">add</span> Guardar
+            </button>
+          </div>
         </div>
 
         <!-- History list -->
@@ -138,7 +193,7 @@
           <div class="history-list overflow-y-auto max-h-[220px] pr-2 space-y-2">
             <div *ngFor="let order of clientOrders" class="history-item p-3 border rounded-lg flex justify-between items-center">
               <div>
-                <span class="text-body-sm font-bold block text-primary">{{ order.id }}</span>
+                <span class="text-body-sm font-bold block text-primary">{{ order.code }}</span>
                 <span class="text-caption text-muted">{{ formatDate(order.createdAt) }}</span>
               </div>
               <div class="flex items-center gap-3">
@@ -148,6 +203,23 @@
             </div>
           </div>
         </div>
+
+        <!-- Auditoria Section -->
+        <div class="audit-section pt-4 border-t space-y-1">
+          <h4 class="text-label-lg uppercase tracking-wider text-muted font-semibold mb-2">Auditoría de Registro</h4>
+          <p class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">person</span>
+            <span>Creado por: </span>
+            <span class="font-bold text-primary">{{ selectedClient.createdBy }}</span>
+            <span *ngIf="selectedClient.createdAt"> el {{ formatDate(selectedClient.createdAt) }}</span>
+          </p>
+          <p *ngIf="selectedClient.updatedBy" class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">edit_note</span>
+            <span>Última modificación por: </span>
+            <span class="font-bold text-primary">{{ selectedClient.updatedBy }}</span>
+            <span *ngIf="selectedClient.updatedAt"> el {{ formatDate(selectedClient.updatedAt) }}</span>
+          </p>
+        </div>
       </div>
 
       <div class="modal-footer mt-6">
@@ -155,4 +227,42 @@
       </div>
     </div>
   </div>
+
+  <!-- Delete Special Price Confirmation Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDeleteSpecialPriceModal && selectedClient">
+    <div class="modal-backdrop-overlay" (click)="cancelDeleteSpecialPrice()"></div>
+
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Eliminar precio especial</h3>
+        <button class="modal-close-btn" (click)="cancelDeleteSpecialPrice()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-3">
+        <p class="text-body-md text-primary font-medium">
+          ¿Estás seguro de que deseas eliminar este precio especial para {{ selectedClient.name }}?
+        </p>
+        <p class="text-body-sm text-muted">
+          Esta acción no se puede deshacer.
+        </p>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="cancelDeleteSpecialPrice()">Cancelar</button>
+        <button class="btn btn--error flex-1" (click)="confirmDeleteSpecialPrice()">
+          <span class="material-symbols-outlined">delete</span> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-feedback-modal
+    [open]="showFeedbackModal"
+    [title]="feedbackTitle"
+    [message]="feedbackMessage"
+    [tone]="feedbackTone"
+    (closed)="closeFeedbackModal()">
+  </app-feedback-modal>
 </div>

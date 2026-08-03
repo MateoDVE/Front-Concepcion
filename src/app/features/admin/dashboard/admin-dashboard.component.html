@@ -75,7 +75,6 @@
           <div class="order-avatar">{{ getClientInitials(order.clientName) }}</div>
           <div class="order-info">
             <div class="order-client font-bold text-body-md">{{ order.clientName }}</div>
-            <div class="order-id text-caption text-muted">{{ order.id }}</div>
           </div>
         </div>
 
@@ -102,7 +101,7 @@
     
     <div class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
-        <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.id }}</h3>
+        <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.code }}</h3>
         <button class="modal-close-btn" (click)="closeModal()">
           <span class="material-symbols-outlined">close</span>
         </button>

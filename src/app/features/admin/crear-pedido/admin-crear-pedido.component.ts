@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
 import { Client, Product, Vendor, Order, OrderItem } from '../../../core/models/types';
+import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
 
 interface OrderFormItem {
   productId: string;
@@ -15,7 +16,7 @@ interface OrderFormItem {
 
 @Component({
   selector: 'app-admin-crear-pedido',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, FeedbackModalComponent],
   templateUrl: './admin-crear-pedido.component.html',
   styleUrl: './admin-crear-pedido.component.scss',
   standalone: true
@@ -45,6 +46,11 @@ export class AdminCrearPedidoComponent implements OnInit {
   isEditing = false;
   isReopening = false;
   editingOrderId: string | null = null;
+  showFeedbackModal = false;
+  feedbackTitle = '';
+  feedbackMessage = '';
+  feedbackTone: 'info' | 'success' | 'warning' | 'error' = 'info';
+  private feedbackAfterClose: (() => void) | null = null;
 
   ngOnInit() {
     this.stateService.clients$.subscribe(c => this.clients = c);
@@ -79,6 +85,7 @@ export class AdminCrearPedidoComponent implements OnInit {
       this.selectedClient = this.clients.find(c => c.id === order.clientId) || null;
       if (this.selectedClient) {
         this.searchClientQuery = this.selectedClient.name;
+        this.stateService.loadSpecialPricesForClient(this.selectedClient.id).subscribe();
       }
 
       this.orderItems = order.items.map(item => {
@@ -133,13 +140,26 @@ export class AdminCrearPedidoComponent implements OnInit {
     this.searchClientQuery = client.name;
     this.showClientSuggestions = false;
 
-    // Recompute prices for all existing items since the client changed
-    // (Rules: proposal changes per client)
-    this.orderItems.forEach(item => {
-      const suggestedPrice = this.stateService.getLastPriceApplied(client.id, item.productId);
-      item.price = suggestedPrice;
+    // Recompute prices for all existing items since the client changed,
+    // first fetching special prices asynchronously to sync cache.
+    this.stateService.loadSpecialPricesForClient(client.id).subscribe({
+      next: () => {
+        this.orderItems.forEach(item => {
+          const suggestedPrice = this.stateService.getLastPriceApplied(client.id, item.productId);
+          item.price = suggestedPrice;
+        });
+        this.calculateTotal();
+      },
+      error: (err) => {
+        console.error('Error al cargar precios especiales:', err);
+        // Fallback simple si la carga falla
+        this.orderItems.forEach(item => {
+          const suggestedPrice = this.stateService.getLastPriceApplied(client.id, item.productId);
+          item.price = suggestedPrice;
+        });
+        this.calculateTotal();
+      }
     });
-    this.calculateTotal();
   }
 
   clearSelectedClient() {
@@ -196,26 +216,41 @@ export class AdminCrearPedidoComponent implements OnInit {
     this.orderTotal = this.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 
+  openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {
+    this.feedbackTitle = title;
+    this.feedbackMessage = message;
+    this.feedbackTone = tone;
+    this.feedbackAfterClose = afterClose || null;
+    this.showFeedbackModal = true;
+  }
+
+  closeFeedbackModal() {
+    this.showFeedbackModal = false;
+    const afterClose = this.feedbackAfterClose;
+    this.feedbackAfterClose = null;
+    afterClose?.();
+  }
+
   // ---- Save Form ----
   saveOrder() {
     if (!this.selectedClient) {
-      alert('Por favor selecciona un cliente.');
+      this.openFeedbackModal('Cliente requerido', 'Por favor selecciona un cliente.', 'warning');
       return;
     }
 
     if (this.orderItems.length === 0) {
-      alert('Debes agregar al menos un producto al pedido.');
+      this.openFeedbackModal('Pedido incompleto', 'Debes agregar al menos un producto al pedido.', 'warning');
       return;
     }
 
     // Validate quantities and prices
     for (const item of this.orderItems) {
       if (item.quantity <= 0) {
-        alert(`La cantidad para ${item.name} debe ser mayor a 0.`);
+        this.openFeedbackModal('Cantidad inválida', `La cantidad para ${item.name} debe ser mayor a 0.`, 'warning');
         return;
       }
       if (item.price < 0) {
-        alert(`El precio para ${item.name} no puede ser negativo.`);
+        this.openFeedbackModal('Precio inválido', `El precio para ${item.name} no puede ser negativo.`, 'warning');
         return;
       }
     }
@@ -246,14 +281,17 @@ export class AdminCrearPedidoComponent implements OnInit {
         deliveredAt: null
       };
       this.stateService.updateOrder(updatedOrder);
-      alert('Pedido actualizado con éxito.');
+      this.openFeedbackModal('Pedido actualizado', 'Pedido actualizado con éxito.', 'success', () => this.router.navigate(['/admin/dashboard']));
     } else {
       // Creating a new order (normal or reopened)
       this.stateService.createOrder(orderData);
-      alert(this.isReopening ? 'Pedido reabierto y registrado con éxito.' : 'Pedido registrado con éxito.');
+      this.openFeedbackModal(
+        this.isReopening ? 'Pedido reabierto' : 'Pedido registrado',
+        this.isReopening ? 'Pedido reabierto y registrado con éxito.' : 'Pedido registrado con éxito.',
+        'success',
+        () => this.router.navigate(['/admin/dashboard'])
+      );
     }
-
-    this.router.navigate(['/admin/dashboard']);
   }
 
   formatCurrency(value: number): string {

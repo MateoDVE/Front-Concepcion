@@ -301,3 +301,80 @@
   @include flex(row, center, center, $space-3);
   text-align: center;
 }
+
+// Close Day Confirmation Modal
+.modal-backdrop-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  @include flex-center();
+  padding: clamp($space-4, 4vh, $space-8);
+}
+
+.modal-backdrop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - #{$space-8});
+  background: $color-surface-container-lowest;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: $space-6;
+  z-index: 10;
+  border: 1px solid rgba($color-outline-variant, 0.45);
+  overflow-y: auto;
+  margin: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-outline-variant, 0.7);
+    border-radius: $radius-full;
+  }
+
+  .modal-close-btn {
+    color: $color-outline;
+    @include flex-center();
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+  }
+
+  .modal-header {
+    @include flex(row, space-between, center, $space-4);
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    padding-bottom: $space-3;
+  }
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: $space-4;
+    align-items: center;
+  }
+}
