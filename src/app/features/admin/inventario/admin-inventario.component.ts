@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Product } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
@@ -73,7 +73,12 @@ export class AdminInventarioComponent implements OnInit {
     this.feedbackAfterClose = null;
     afterClose?.();
   }
-  saveProduct() {
+  saveProduct(form?: NgForm) {
+    if (form && form.invalid) {
+      this.openFeedbackModal('Campos inválidos', 'Por favor corrige los errores en el formulario antes de guardar.', 'warning');
+      return;
+    }
+
     if (!this.newProdName.trim() || this.newProdPrice <= 0 || this.newProdStock < 0) {
       this.openFeedbackModal('Campos inválidos', 'Por favor completa los campos con valores válidos (precio > 0, stock >= 0).', 'warning');
       return;

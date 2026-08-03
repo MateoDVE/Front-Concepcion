@@ -43,10 +43,10 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showAddModal">
     <div class="modal-backdrop-overlay" (click)="closeAddModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <form #productForm="ngForm" (ngSubmit)="saveProduct(productForm)" novalidate class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Registrar Producto</h3>
-        <button class="modal-close-btn" (click)="closeAddModal()">
+        <button type="button" class="modal-close-btn" (click)="closeAddModal()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
@@ -54,22 +54,56 @@
       <div class="modal-body space-y-4">
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Nombre del Producto *</label>
-          <input type="text" [(ngModel)]="newProdName" class="form-input w-full" placeholder="Ej. Hielo Picado 5kg" />
+          <input type="text" 
+                 name="prodName"
+                 [(ngModel)]="newProdName" 
+                 #prodNameInput="ngModel"
+                 required
+                 class="form-input w-full" 
+                 [class.is-invalid]="prodNameInput.invalid && (prodNameInput.dirty || prodNameInput.touched || productForm.submitted)"
+                 placeholder="Ej. Hielo Picado 5kg" />
+          <span *ngIf="prodNameInput.invalid && (prodNameInput.dirty || prodNameInput.touched || productForm.submitted)" class="error-text">
+            El nombre del producto es obligatorio.
+          </span>
         </div>
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
-          <input type="number" [(ngModel)]="newProdPrice" class="form-input w-full" placeholder="Ej. 15.00" min="0.1" />
+          <input type="number" 
+                 name="prodPrice"
+                 [(ngModel)]="newProdPrice" 
+                 #prodPriceInput="ngModel"
+                 required
+                 min="0.01"
+                 class="form-input w-full" 
+                 [class.is-invalid]="prodPriceInput.invalid && (prodPriceInput.dirty || prodPriceInput.touched || productForm.submitted)"
+                 placeholder="Ej. 15.00" />
+          <span *ngIf="prodPriceInput.invalid && (prodPriceInput.dirty || prodPriceInput.touched || productForm.submitted)" class="error-text">
+            <span *ngIf="prodPriceInput.errors?.['required']">El precio base es obligatorio.</span>
+            <span *ngIf="prodPriceInput.errors?.['min']">El precio base debe ser mayor a 0.</span>
+          </span>
         </div>
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Stock Inicial *</label>
-          <input type="number" [(ngModel)]="newProdStock" class="form-input w-full" placeholder="Ej. 100" min="0" />
+          <input type="number" 
+                 name="prodStock"
+                 [(ngModel)]="newProdStock" 
+                 #prodStockInput="ngModel"
+                 required
+                 min="0"
+                 class="form-input w-full" 
+                 [class.is-invalid]="prodStockInput.invalid && (prodStockInput.dirty || prodStockInput.touched || productForm.submitted)"
+                 placeholder="Ej. 100" />
+          <span *ngIf="prodStockInput.invalid && (prodStockInput.dirty || prodStockInput.touched || productForm.submitted)" class="error-text">
+            <span *ngIf="prodStockInput.errors?.['required']">El stock inicial es obligatorio.</span>
+            <span *ngIf="prodStockInput.errors?.['min']">El stock inicial debe ser mayor o igual a 0.</span>
+          </span>
         </div>
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Unidad de Medida *</label>
-          <select [(ngModel)]="newProdUnit" class="form-select w-full">
+          <select name="prodUnit" [(ngModel)]="newProdUnit" class="form-select w-full">
             <option value="bolsa">Bolsa</option>
             <option value="bidon">Bidón</option>
             <option value="pack">Pack / Pack x6</option>
@@ -79,12 +113,12 @@
       </div>
 
       <div class="modal-footer mt-6 flex gap-4">
-        <button class="btn btn--outline flex-1" (click)="closeAddModal()">Cancelar</button>
-        <button class="btn btn--primary flex-[1.5]" (click)="saveProduct()">
+        <button type="button" class="btn btn--outline flex-1" (click)="closeAddModal()">Cancelar</button>
+        <button type="submit" class="btn btn--primary flex-[1.5]">
           <span class="material-symbols-outlined">save</span> Guardar
         </button>
       </div>
-    </div>
+    </form>
   </div>
 
   <!-- Edit Product Form Modal -->

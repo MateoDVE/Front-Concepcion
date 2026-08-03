@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Client, Order, OrderStatus, Product } from '../../../core/models/types';
 import { map } from 'rxjs/operators';
@@ -158,7 +158,12 @@ export class AdminClientesComponent implements OnInit {
     afterClose?.();
   }
 
-  saveClient() {
+  saveClient(form?: NgForm) {
+    if (form && form.invalid) {
+      this.openFeedbackModal('Campos inválidos', 'Por favor corrige los errores en el formulario antes de guardar.', 'warning');
+      return;
+    }
+
     if (!this.newClientName.trim() || !this.newClientPhone.trim() || !this.newClientAddress.trim()) {
       this.openFeedbackModal('Campos incompletos', 'Por favor completa los campos obligatorios.', 'warning');
       return;
