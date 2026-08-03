@@ -176,16 +176,29 @@ export class StateService {
 
   // ---- Mutators (HTTP Actions) ----
 
-  addClient(name: string, phone: string, address: string, locationUrl: string, clientType: string = 'Particular'): void {
+  addClient(
+    name: string,
+    phone: string,
+    address: string,
+    locationUrl: string,
+    clientType: string = 'Particular',
+    specialPrices: { producto_id: string; precio_especial: number }[] = []
+  ): void {
     const body = {
       nombre: name,
       telefono: phone,
       direccion: address,
       ubicacion_url: locationUrl || null,
-      tipo_cliente: clientType
+      tipo_cliente: clientType,
+      precios_especiales: specialPrices
     };
     this.http.post<any>(`${APP_CONFIG.apiUrl}/clients`, body).subscribe({
-      next: () => this.loadClients(),
+      next: (newClient) => {
+        this.loadClients();
+        if (newClient && newClient.id && specialPrices.length > 0) {
+          this.loadSpecialPricesForClient(newClient.id).subscribe();
+        }
+      },
       error: (err) => console.error('Error creating client', err)
     });
   }

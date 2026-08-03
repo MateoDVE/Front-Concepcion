@@ -46,6 +46,7 @@ export class AdminClientesComponent implements OnInit {
   newClientAddress = '';
   newClientLocationUrl = '';
   newClientType = 'Particular';
+  newClientSpecialPrices: Record<string, number | null> = {};
 
   ngOnInit() {
     this.stateService.clients$.subscribe(c => {
@@ -131,6 +132,10 @@ export class AdminClientesComponent implements OnInit {
     this.newClientAddress = '';
     this.newClientLocationUrl = '';
     this.newClientType = 'Particular';
+    this.newClientSpecialPrices = {};
+    this.products.forEach(p => {
+      this.newClientSpecialPrices[p.id] = null;
+    });
     this.showAddModal = true;
   }
 
@@ -162,12 +167,21 @@ export class AdminClientesComponent implements OnInit {
     // Default map location if empty
     const mapUrl = this.newClientLocationUrl.trim() || `https://maps.google.com/?q=${encodeURIComponent(this.newClientAddress)}`;
 
+    // Build the list of special prices to save
+    const specialPricesToSend = Object.entries(this.newClientSpecialPrices)
+      .filter(([_, val]) => val !== null && val !== undefined && val >= 0)
+      .map(([prodId, val]) => ({
+        producto_id: prodId,
+        precio_especial: Number(val)
+      }));
+
     this.stateService.addClient(
       this.newClientName.trim(),
       this.newClientPhone.trim(),
       this.newClientAddress.trim(),
       mapUrl,
-      this.newClientType
+      this.newClientType,
+      specialPricesToSend
     );
 
     this.closeAddModal();
