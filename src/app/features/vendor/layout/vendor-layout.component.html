@@ -29,7 +29,7 @@
           <span>{{ activeVendor?.name }}</span>
         </div>
         <div class="dropdown-divider"></div>
-        <button class="dropdown-item dropdown-item--exit" (click)="logout()">
+        <button type="button" class="dropdown-item dropdown-item--exit" (click)="logout($event)">
           <span class="material-symbols-outlined text-sm">logout</span>
           <span>Cerrar Sesión</span>
         </button>
@@ -50,6 +50,10 @@
     <a routerLink="/vendor/ruta" routerLinkActive="active" class="bottom-nav-item">
       <span class="material-symbols-outlined">route</span>
       <span>Ruta</span>
+    </a>
+    <a routerLink="/vendor/ventas" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-symbols-outlined">point_of_sale</span>
+      <span>Ventas</span>
     </a>
     <a routerLink="/vendor/entregas" routerLinkActive="active" class="bottom-nav-item">
       <span class="material-symbols-outlined">description</span>

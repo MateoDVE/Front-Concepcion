@@ -57,7 +57,7 @@
         <div *ngFor="let order of vendorOrders" class="cash-item p-3 border rounded-lg flex justify-between items-center" [class.hidden]="order.status !== 'delivered'">
           <div>
             <span class="text-body-sm font-bold block">{{ order.clientName }}</span>
-            <span class="text-caption text-muted">{{ order.id }}</span>
+            <span class="text-caption text-muted">{{ order.code }}</span>
           </div>
           <span class="text-body-sm font-bold text-secondary">{{ formatCurrency(order.total) }}</span>
         </div>
