@@ -1,0 +1,79 @@
+<div class="container animate-fade-in pb-12">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <h2 class="text-headline-xl text-primary">Ingreso de Producción y Stock</h2>
+    <p class="text-muted text-body-md">Selecciona un producto para registrar la producción diaria y sumarlo al inventario.</p>
+  </div>
+
+  <!-- Products Catalog Grid -->
+  <section class="products-grid">
+    <!-- Product Card Item -->
+    <div *ngFor="let product of products" (click)="openEditModal(product)" class="product-card animate-slide-up">
+      <div class="product-card-header">
+        <span class="material-symbols-outlined product-icon">water_drop</span>
+        <h3 class="name font-bold text-body-md text-primary">{{ product.name }}</h3>
+      </div>
+      <div class="product-card-body space-y-2">
+        <div class="flex justify-between items-center text-body-sm">
+          <span class="text-muted">Stock actual:</span>
+          <span class="font-bold text-headline-sm" [ngClass]="{'stock-warning': product.stock < 50, 'text-primary': product.stock >= 50}">
+            {{ product.stock }} {{ product.unit }}s
+          </span>
+        </div>
+      </div>
+      <div class="product-card-footer border-t pt-3 flex justify-between items-center">
+        <button class="action-link text-body-sm font-semibold flex items-center gap-1 text-primary">
+          <span class="material-symbols-outlined text-sm">add_circle</span> Agregar Stock
+        </button>
+        <span class="material-symbols-outlined chevron text-primary">chevron_right</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Add Stock Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal && selectedProduct">
+    <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Registrar Producción</h3>
+        <button class="modal-close-btn" (click)="closeEditModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="material-symbols-outlined text-[32px] text-primary">water_drop</span>
+          <div>
+            <h4 class="font-bold text-body-lg text-primary">{{ selectedProduct.name }}</h4>
+            <p class="text-caption text-muted">Stock actual en almacén: {{ selectedProduct.stock }} {{ selectedProduct.unit }}s</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase font-bold">Cantidad Producida a Agregar *</label>
+          <input type="number" [(ngModel)]="editProdAddStock" class="form-input w-full font-semibold text-body-lg" min="1" placeholder="Ej. 50" autofocus />
+          <span class="text-caption text-muted mt-1 block">
+            Introduce la cantidad total de {{ selectedProduct.unit }}s que se produjeron y se ingresarán al almacén hoy.
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeEditModal()">Cancelar</button>
+        <button class="btn btn--primary flex-[1.5]" (click)="saveEditProduct()">
+          <span class="material-symbols-outlined">add_task</span> Guardar Producción
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <app-feedback-modal
+    [open]="showFeedbackModal"
+    [title]="feedbackTitle"
+    [message]="feedbackMessage"
+    [tone]="feedbackTone"
+    (closed)="closeFeedbackModal()">
+  </app-feedback-modal>
+</div>
