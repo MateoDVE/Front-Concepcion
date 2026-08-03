@@ -20,6 +20,7 @@ export class StateService {
   private vendorsSubject = new BehaviorSubject<Vendor[]>([]);
   private ordersSubject = new BehaviorSubject<Order[]>([]);
   private activeVendorSubject = new BehaviorSubject<Vendor | null>(null);
+  private specialPricesCache = new Map<string, any[]>();
 
   // Expose as Observables
   clients$ = this.clientsSubject.asObservable();
@@ -119,7 +120,12 @@ export class StateService {
       name: db.nombre,
       phone: db.telefono,
       address: db.direccion,
-      locationUrl: db.ubicacion_url || `https://maps.google.com/?q=${encodeURIComponent(db.direccion)}`
+      locationUrl: db.ubicacion_url || `https://maps.google.com/?q=${encodeURIComponent(db.direccion)}`,
+      clientType: db.tipo_cliente || 'Particular',
+      createdBy: db.creado_por_nombre || 'Sistema',
+      updatedBy: db.actualizado_por_nombre || undefined,
+      createdAt: db.created_at,
+      updatedAt: db.updated_at
     };
   }
 
@@ -146,6 +152,7 @@ export class StateService {
   private mapOrder(db: any): Order {
     return {
       id: db.id,
+      code: db.codigo || db.id,
       clientId: db.cliente_id,
       clientName: db.cliente?.nombre || 'Cliente Desconocido',
       clientLocationUrl: db.cliente?.ubicacion_url || (db.cliente?.direccion ? `https://maps.google.com/?q=${encodeURIComponent(db.cliente.direccion)}` : undefined),
@@ -169,12 +176,13 @@ export class StateService {
 
   // ---- Mutators (HTTP Actions) ----
 
-  addClient(name: string, phone: string, address: string, locationUrl: string): void {
+  addClient(name: string, phone: string, address: string, locationUrl: string, clientType: string = 'Particular'): void {
     const body = {
       nombre: name,
       telefono: phone,
       direccion: address,
-      ubicacion_url: locationUrl || null
+      ubicacion_url: locationUrl || null,
+      tipo_cliente: clientType
     };
     this.http.post<any>(`${APP_CONFIG.apiUrl}/clients`, body).subscribe({
       next: () => this.loadClients(),
@@ -219,6 +227,7 @@ export class StateService {
     const body = {
       cliente_id: orderData.clientId,
       vendedor_id: orderData.vendorId || undefined,
+      estado: orderData.status || undefined,
       detalles: orderData.items.map((item: any) => ({
         producto_id: item.productId,
         cantidad: item.quantity,
@@ -297,7 +306,7 @@ export class StateService {
         const diferencia = total_recaudado - total_sistema;
 
         const body = {
-          fecha: new Date().toISOString().split('T')[0],
+          fecha: this.getLocalDateString(),
           vendedor_id: vendor.id,
           total_pedidos,
           entregados,
@@ -325,9 +334,28 @@ export class StateService {
     }
   }
 
+  getLocalDateString(date: Date = new Date()): string {
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 10);
+    return localISOTime;
+  }
+
   // ---- Price rule helper ----
+  getSpecialPriceFromCache(clientId: string, productId: string): number | null {
+    const prices = this.specialPricesCache.get(clientId);
+    if (!prices) return null;
+    const match = prices.find(p => p.producto_id === productId);
+    return match ? Number(match.precio_especial) : null;
+  }
+
   getLastPriceApplied(clientId: string, productId: string): number {
-    // Rule 1: Search locally in ordersSubject for this client's most recent delivered order with this product
+    // Rule 1: Special price from cache (precios_clientes)
+    const specialPrice = this.getSpecialPriceFromCache(clientId, productId);
+    if (specialPrice !== null) {
+      return specialPrice;
+    }
+
+    // Rule 2: Search locally in ordersSubject for this client's most recent delivered order with this product
     const clientOrders = this.ordersSubject.value
       .filter(o => o.clientId === clientId && o.status === 'delivered')
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -339,9 +367,42 @@ export class StateService {
       }
     }
 
-    // Rule 2: Fallback to the base price of the product from the catalog
+    // Rule 3: Fallback to the base price of the product from the catalog
     const product = this.productsSubject.value.find(p => p.id === productId);
     return product ? product.basePrice : 0;
+  }
+
+  loadSpecialPricesForClient(clientId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/clients/${clientId}/special-prices`).pipe(
+      map(prices => {
+        this.specialPricesCache.set(clientId, prices);
+        return prices;
+      })
+    );
+  }
+
+  setClientSpecialPrice(clientId: string, productId: string, price: number): Observable<any> {
+    const body = {
+      producto_id: productId,
+      precio_especial: price
+    };
+    return this.http.post<any>(`${APP_CONFIG.apiUrl}/clients/${clientId}/special-prices`, body).pipe(
+      map(res => {
+        // Reload special prices to keep cache in sync
+        this.loadSpecialPricesForClient(clientId).subscribe();
+        return res;
+      })
+    );
+  }
+
+  deleteClientSpecialPrice(clientId: string, productId: string): Observable<any> {
+    return this.http.delete<any>(`${APP_CONFIG.apiUrl}/clients/${clientId}/special-prices/${productId}`).pipe(
+      map(res => {
+        // Reload special prices to keep cache in sync
+        this.loadSpecialPricesForClient(clientId).subscribe();
+        return res;
+      })
+    );
   }
 
   clearLocalData(): void {
@@ -356,5 +417,9 @@ export class StateService {
 
   getHistoryReport(): Observable<any[]> {
     return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/closings/report/history`);
+  }
+
+  getProductionReport(date: string): Observable<any[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/products/reports/production?fecha=${date}`);
   }
 }

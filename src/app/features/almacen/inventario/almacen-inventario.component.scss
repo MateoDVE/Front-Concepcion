@@ -1,0 +1,152 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $card-gap;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.product-card {
+  @include card-interactive(sm);
+  border-radius: $radius-default;
+  @include flex-column(space-between, stretch, $space-3);
+  padding: $space-5;
+
+  &-header {
+    @include flex(row, flex-start, center, $space-3);
+
+    .product-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: $radius-full;
+      background: rgba($color-primary-container, 0.12);
+      color: $color-primary-container;
+      @include flex-center();
+      font-size: 22px;
+    }
+
+    .name {
+      line-height: 1.2;
+    }
+  }
+
+  &-body {
+    flex: 1;
+    padding: $space-1 0;
+  }
+
+  .stock-warning {
+    color: $color-error;
+    font-weight: $weight-bold;
+  }
+
+  &-footer {
+    border-top: 1px solid rgba($color-outline-variant, 0.25);
+    
+    .action-link {
+      color: $color-primary-container;
+      @include flex(row, flex-start, center, 4px);
+      transition: opacity $transition-fast;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    .chevron {
+      color: $color-outline;
+      transition: transform $transition-fast;
+    }
+  }
+
+  &:hover {
+    .chevron {
+      transform: translateX(3px);
+      color: $color-primary;
+    }
+  }
+}
+
+// Modals
+.modal-backdrop-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  @include flex-center();
+  padding: $space-4;
+}
+
+.modal-backdrop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  background: $color-surface-container-lowest;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: $space-6;
+  z-index: 10;
+  border: 1px solid rgba($color-outline-variant, 0.45);
+
+  .modal-close-btn {
+    color: $color-outline;
+    @include flex-center();
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+  }
+
+  .modal-header {
+    @include flex(row, space-between, center, $space-4);
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    padding-bottom: $space-3;
+  }
+
+  .form-group {
+    @include flex-column(center, flex-start, $space-1);
+    
+    .form-input {
+      width: 100%;
+      border-radius: $radius-full;
+      background: $color-surface-container-low;
+      border: 1px solid rgba($color-outline-variant, 0.4);
+      padding: $space-3 $space-4;
+    }
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.25);
+}
+.space-y-4 > * + * {
+  margin-top: $space-4;
+}
+.space-y-2 > * + * {
+  margin-top: $space-2;
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Product } from '../../../core/models/types';
+import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
 
 interface ProductSummary {
   productId: string;
@@ -29,7 +30,7 @@ interface MonthlySummary {
 
 @Component({
   selector: 'app-admin-reporte',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent],
   templateUrl: './admin-reporte.component.html',
   styleUrl: './admin-reporte.component.scss',
   standalone: true
@@ -51,6 +52,7 @@ export class AdminReporteComponent implements OnInit {
   totalCollected = 0;
   efficiencyRate = 0;
   failedOrders: Order[] = [];
+  deliveredOrders: Order[] = [];
   productSummaries: ProductSummary[] = [];
 
   // --- Tab 2: Historical Day ---
@@ -66,12 +68,19 @@ export class AdminReporteComponent implements OnInit {
   historyDifference = 0;
   historyEfficiencyRate = 0;
   historyFailedOrders: Order[] = [];
+  historyDeliveredOrders: Order[] = [];
   historyProductSummaries: ProductSummary[] = [];
 
   // --- Tab 3: Monthly report ---
   monthlyLoading = false;
   monthlyRecords: any[] = []; // Raw history records from /closings/report/history
   monthlySummaries: MonthlySummary[] = [];
+  showFeedbackModal = false;
+  feedbackTitle = '';
+  feedbackMessage = '';
+  feedbackTone: 'info' | 'success' | 'warning' | 'error' = 'info';
+  private feedbackAfterClose: (() => void) | null = null;
+  showCloseDayModal = false;
 
   ngOnInit() {
     this.checkIfTodayIsClosed();
@@ -107,7 +116,7 @@ export class AdminReporteComponent implements OnInit {
   computeTodayReport() {
     // Filter only today's orders for the active (open) day
     const todayStr = this.getLocalDateString();
-    const todayOrders = this.orders.filter(o => o.createdAt.startsWith(todayStr));
+    const todayOrders = this.orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
 
     this.totalOrders = todayOrders.length;
     this.deliveredCount = todayOrders.filter(o => o.status === 'delivered').length;
@@ -123,6 +132,7 @@ export class AdminReporteComponent implements OnInit {
       : 0;
 
     this.failedOrders = todayOrders.filter(o => o.status === 'failed');
+    this.deliveredOrders = todayOrders.filter(o => o.status === 'delivered');
 
     const salesMap = new Map<string, { quantity: number; revenue: number }>();
     todayOrders
@@ -154,26 +164,50 @@ export class AdminReporteComponent implements OnInit {
     const todayStr = this.getLocalDateString();
     this.stateService.getHistoryReport().subscribe({
       next: (data) => {
-        this.isTodayClosed = data.some(r => r.fecha.startsWith(todayStr) && r.tipo_registro === 'CERRADO');
+        this.isTodayClosed = data.some(r => r.fecha.split('T')[0] === todayStr && r.tipo_registro === 'CERRADO');
       },
       error: (err) => console.error('Error checking if today is closed', err)
     });
   }
 
   closeDay() {
-    if (confirm('¿Deseas realizar el Cierre de Jornada? Esto consolidará las ventas del día y registrará los cierres de caja correspondientes en el sistema.')) {
-      this.stateService.resetData().subscribe({
-        next: () => {
-          alert('Jornada consolidada con éxito.');
+    this.showCloseDayModal = true;
+  }
+
+  cancelCloseDay() {
+    this.showCloseDayModal = false;
+  }
+
+  openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {
+    this.feedbackTitle = title;
+    this.feedbackMessage = message;
+    this.feedbackTone = tone;
+    this.feedbackAfterClose = afterClose || null;
+    this.showFeedbackModal = true;
+  }
+
+  closeFeedbackModal() {
+    this.showFeedbackModal = false;
+    const afterClose = this.feedbackAfterClose;
+    this.feedbackAfterClose = null;
+    afterClose?.();
+  }
+
+  confirmCloseDay() {
+    this.stateService.resetData().subscribe({
+      next: () => {
+        this.showCloseDayModal = false;
+        this.openFeedbackModal('Jornada consolidada', 'Jornada consolidada con éxito.', 'success', () => {
           this.checkIfTodayIsClosed();
           location.reload();
-        },
-        error: (err) => {
-          console.error('Error al realizar el cierre', err);
-          alert('Hubo un error al realizar el cierre. Por favor verifica la consola.');
-        }
-      });
-    }
+        });
+      },
+      error: (err) => {
+        console.error('Error al realizar el cierre', err);
+        this.showCloseDayModal = false;
+        this.openFeedbackModal('Error', 'Hubo un error al realizar el cierre. Por favor verifica la consola.', 'error');
+      }
+    });
   }
 
   // --- Logic for Tab 2 (Historical Day) ---
@@ -188,7 +222,7 @@ export class AdminReporteComponent implements OnInit {
         this.historyReportData = data;
         
         // Find general metrics in monthlyRecords if loaded
-        const record = this.monthlyRecords.find(r => r.fecha.startsWith(this.historyDate));
+        const record = this.monthlyRecords.find(r => r.fecha.split('T')[0] === this.historyDate);
         if (record) {
           this.historyTotalOrders = record.total_pedidos;
           this.historyDeliveredCount = record.total_entregados;
@@ -235,8 +269,9 @@ export class AdminReporteComponent implements OnInit {
   }
 
   computeHistoricalOrdersSummary() {
-    const histOrders = this.orders.filter(o => o.createdAt.startsWith(this.historyDate));
+    const histOrders = this.orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === this.historyDate);
     this.historyFailedOrders = histOrders.filter(o => o.status === 'failed');
+    this.historyDeliveredOrders = histOrders.filter(o => o.status === 'delivered');
 
     const salesMap = new Map<string, { quantity: number; revenue: number }>();
     histOrders

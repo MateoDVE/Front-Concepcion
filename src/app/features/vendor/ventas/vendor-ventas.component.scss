@@ -1,0 +1,245 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.page-greeting {
+  h2 {
+    color: $color-primary;
+    line-height: 1.2;
+  }
+}
+
+.section-card {
+  @include card(sm);
+  border-radius: $radius-md;
+  background: $color-surface-container-low;
+  padding: $space-6;
+  border: 1px solid rgba($color-outline-variant, 0.25);
+}
+
+.product-selection-block {
+  border-color: rgba($color-outline-variant, 0.35) !important;
+}
+
+// Form styling
+.form-group {
+  @include flex-column(center, flex-start, $space-1);
+  width: 100%;
+  
+  .form-select {
+    width: 100%;
+    border-radius: $radius-default;
+    background: $color-surface-container-lowest;
+    border: 1px solid rgba($color-outline-variant, 0.4);
+    padding: $space-3 $space-4;
+    color: $color-on-surface;
+    font-family: inherit;
+    font-size: $text-body-md;
+
+    &:focus {
+      border-color: $color-primary;
+      outline: none;
+    }
+
+    &:disabled {
+      background: $color-surface-container-low;
+      opacity: 0.6;
+    }
+  }
+
+  .form-input {
+    width: 100%;
+    border-radius: $radius-default;
+    background: $color-surface-container-lowest;
+    border: 1px solid rgba($color-outline-variant, 0.4);
+    padding: $space-3 $space-4;
+    color: $color-on-surface;
+    font-family: inherit;
+    font-size: $text-body-md;
+
+    &:focus {
+      border-color: $color-primary;
+      outline: none;
+    }
+
+    &:disabled {
+      background: $color-surface-container-low;
+      opacity: 0.6;
+    }
+  }
+}
+
+// Shopping cart table styles
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba($color-outline-variant, 0.3);
+  border-radius: $radius-default;
+  background: $color-surface-container-lowest;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: $text-body-sm;
+
+  th, td {
+    padding: $space-3 $space-4;
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    white-space: nowrap;
+  }
+
+  th {
+    background: $color-surface-container-low;
+    font-weight: $weight-bold;
+    color: $color-primary;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// Modal Form styling
+.modal-backdrop-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-modal;
+  @include flex-center();
+  padding: clamp($space-4, 4vh, $space-8);
+}
+
+.modal-backdrop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - #{$space-8});
+  background: $color-surface-container-lowest;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: $space-6;
+  z-index: 10;
+  border: 1px solid rgba($color-outline-variant, 0.45);
+  overflow-y: auto;
+  margin: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-outline-variant, 0.7);
+    border-radius: $radius-full;
+  }
+
+  .modal-close-btn {
+    color: $color-outline;
+    @include flex-center();
+    width: 36px;
+    height: 36px;
+    border-radius: $radius-full;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-surface-container;
+      color: $color-on-surface;
+    }
+  }
+
+  .modal-header {
+    @include flex(row, space-between, center, $space-4);
+    border-bottom: 1px solid rgba($color-outline-variant, 0.25);
+    padding-bottom: $space-3;
+  }
+
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: $space-4;
+    align-items: center;
+  }
+}
+
+.border-t {
+  border-top: 1px solid rgba($color-outline-variant, 0.25);
+}
+
+.empty-state {
+  @include flex-column(center, center, $space-2);
+  text-align: center;
+
+  .empty-icon {
+    font-size: 40px;
+    color: $color-outline-variant;
+  }
+}
+
+// Client Autocomplete Search
+.autocomplete-container {
+  z-index: 10;
+}
+
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  background: transparent;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: $space-1;
+  background: $color-surface-container-lowest;
+  border: 1px solid rgba($color-outline-variant, 0.35);
+  border-radius: $radius-default;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+  @include flex-column(flex-start, stretch, 0);
+
+  &--empty {
+    @include flex-column(center, center, $space-1);
+    color: $color-outline;
+  }
+}
+
+.autocomplete-item {
+  width: 100%;
+  background: transparent;
+  border-bottom: 1px solid rgba($color-outline-variant, 0.15);
+  transition: background $transition-fast;
+  color: $color-on-surface;
+  font-family: inherit;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: $color-surface-container-low;
+  }
+}
+

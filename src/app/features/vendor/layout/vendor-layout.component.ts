@@ -28,10 +28,14 @@ export class VendorLayoutComponent implements OnInit {
     this.showVendorSelector = !this.showVendorSelector;
   }
 
-  logout() {
+  logout(event?: Event) {
+    event?.preventDefault();
+    event?.stopPropagation();
     this.showVendorSelector = false;
     this.authService.signOut().subscribe(() => {
-      this.router.navigate(['/']);
+      void this.router.navigateByUrl('/', { replaceUrl: true }).catch(() => {
+        window.location.replace('/');
+      });
     });
   }
 }

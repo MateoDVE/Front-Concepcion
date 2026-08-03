@@ -45,7 +45,7 @@
           <span class="state-dot" [ngClass]="order.status"></span>
           <div class="client-meta">
             <h4 class="client-name font-bold text-body-md">{{ order.clientName }}</h4>
-            <span class="order-id text-caption text-muted">{{ order.id }}</span>
+            <span class="order-id text-caption text-muted">{{ order.code }}</span>
           </div>
         </div>
         <div class="right-total text-right">
@@ -57,7 +57,7 @@
       <div class="stop-card-details pt-3 border-t mt-3 space-y-2 animate-fade-in" *ngIf="isExpanded(order.id)">
         <p class="address text-body-sm text-muted">
           <span class="material-symbols-outlined text-sm">location_on</span>
-          {{ order.clientName }} • {{ order.id }}
+          {{ order.clientName }} • {{ order.code }}
         </p>
         
         <div class="products-list pt-2 border-t">

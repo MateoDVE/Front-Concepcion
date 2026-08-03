@@ -1,0 +1,95 @@
+<div class="container animate-fade-in pb-12">
+  <!-- Page Header -->
+  <div class="page-header mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 class="text-headline-xl text-primary font-bold">Reporte de Producción Diaria</h2>
+      <p class="text-muted text-body-md">Detalle de adiciones de stock e ingresos de producción al almacén.</p>
+    </div>
+    <div class="date-selector-wrap">
+      <label class="text-caption text-muted font-semibold uppercase mr-2">Fecha de Reporte:</label>
+      <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="form-input date-input" />
+    </div>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  <section class="kpis-grid mb-6">
+    <div class="kpi-card animate-slide-up bg-gradient-blue">
+      <div class="kpi-icon-wrap">
+        <span class="material-symbols-outlined">assignment</span>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-title text-caption uppercase">Ingresos Registrados</span>
+        <span class="kpi-value text-headline-xl font-bold">{{ totalLogsCount }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card animate-slide-up bg-gradient-green" style="animation-delay: 0.1s;">
+      <div class="kpi-icon-wrap">
+        <span class="material-symbols-outlined">add_moderator</span>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-title text-caption uppercase">Total Unidades Sumadas</span>
+        <span class="kpi-value text-headline-xl font-bold">+{{ totalUnitsAdded }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Report Detail Layout -->
+  <div class="report-content-grid" *ngIf="logs.length > 0; else emptyState">
+    <!-- Grouped Summary by Product -->
+    <div class="report-section card">
+      <h3 class="text-title-lg text-primary font-bold mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined">inventory_2</span> Resumen por Producto
+      </h3>
+      <div class="summary-list space-y-3">
+        <div *ngFor="let summary of productSummaries" class="summary-item">
+          <div class="summary-info">
+            <span class="font-semibold text-body-md text-primary">{{ summary.name }}</span>
+            <span class="text-caption text-muted">{{ summary.total }} {{ summary.unit }}s agregados</span>
+          </div>
+          <div class="summary-badge bg-primary-light text-primary">
+            +{{ summary.total }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Logs Table -->
+    <div class="report-section card table-card">
+      <h3 class="text-title-lg text-primary font-bold mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined">list_alt</span> Historial de Ingresos
+      </h3>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Registrado Por</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of logs">
+              <td class="time-cell font-medium">{{ formatTime(log.created_at) }}</td>
+              <td class="font-bold text-primary">{{ log.producto.nombre }}</td>
+              <td class="amount-cell text-green font-bold">+{{ log.cantidad }} {{ log.producto.unidad }}s</td>
+              <td class="user-cell">{{ log.usuario.nombre }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <ng-template #emptyState>
+    <div class="card empty-state animate-fade-in">
+      <span class="material-symbols-outlined empty-icon">assignment_late</span>
+      <h3 class="text-title-lg font-bold text-primary mb-2">Sin registros de producción</h3>
+      <p class="text-muted text-body-md max-w-md text-center">
+        No se ha registrado ninguna adición de inventario para la fecha {{ selectedDate | date:'dd/MM/yyyy' }}.
+      </p>
+    </div>
+  </ng-template>
+</div>

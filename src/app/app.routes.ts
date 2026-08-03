@@ -10,8 +10,12 @@ import { VendorLayoutComponent } from './features/vendor/layout/vendor-layout.co
 import { VendorRutaComponent } from './features/vendor/ruta/vendor-ruta.component';
 import { VendorEntregasComponent } from './features/vendor/entregas/vendor-entregas.component';
 import { VendorReporteComponent } from './features/vendor/reporte/vendor-reporte.component';
+import { VendorVentasComponent } from './features/vendor/ventas/vendor-ventas.component';
 
 import { LoginComponent } from './features/auth/login/login.component';
+import { AlmacenLayoutComponent } from './features/almacen/layout/almacen-layout.component';
+import { AlmacenInventarioComponent } from './features/almacen/inventario/almacen-inventario.component';
+import { AlmacenReporteComponent } from './features/almacen/reporte/almacen-reporte.component';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent },
@@ -38,8 +42,20 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'ruta', pathMatch: 'full' },
       { path: 'ruta', component: VendorRutaComponent },
+      { path: 'ventas', component: VendorVentasComponent },
       { path: 'entregas', component: VendorEntregasComponent },
       { path: 'reporte', component: VendorReporteComponent }
+    ]
+  },
+
+  // Almacen Panel Routes
+  {
+    path: 'almacen',
+    component: AlmacenLayoutComponent,
+    children: [
+      { path: '', redirectTo: 'inventario', pathMatch: 'full' },
+      { path: 'inventario', component: AlmacenInventarioComponent },
+      { path: 'reporte', component: AlmacenReporteComponent }
     ]
   },
 

@@ -41,7 +41,7 @@
           <div class="order-info">
             <div class="order-client font-bold text-body-md">{{ order.clientName }}</div>
             <div class="order-id text-caption text-muted">
-              {{ order.id }} • {{ order.vendorName || 'Sin asignar' }}
+              {{ order.code }} • {{ order.vendorName || 'Sin asignar' }}
             </div>
           </div>
         </div>
@@ -69,7 +69,7 @@
     
     <div class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
-        <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.id }}</h3>
+        <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.code }}</h3>
         <button class="modal-close-btn" (click)="closeModal()">
           <span class="material-symbols-outlined">close</span>
         </button>
@@ -128,6 +128,36 @@
 
         <button *ngIf="selectedOrder.status === 'failed'" class="btn btn--primary flex-[1.5]" (click)="reopenOrder(selectedOrder.id)">
           <span class="material-symbols-outlined">autorenew</span> Reabrir Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Order Confirmation Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDeleteOrderModal && selectedOrder">
+    <div class="modal-backdrop-overlay" (click)="cancelDeleteOrder()"></div>
+
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Eliminar pedido</h3>
+        <button class="modal-close-btn" (click)="cancelDeleteOrder()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-3">
+        <p class="text-body-md text-primary font-medium">
+          ¿Está seguro de que desea eliminar este pedido?
+        </p>
+        <p class="text-body-sm text-muted">
+          Esta acción no se puede deshacer.
+        </p>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="cancelDeleteOrder()">Cancelar</button>
+        <button class="btn btn--error flex-1" (click)="confirmDeleteOrder()">
+          <span class="material-symbols-outlined">delete</span> Eliminar
         </button>
       </div>
     </div>

@@ -21,6 +21,8 @@ export class AdminPedidosComponent implements OnInit {
   orders: Order[] = [];
   filteredOrders: Order[] = [];
   selectedOrder: Order | null = null;
+  showDeleteOrderModal = false;
+  pendingDeleteOrderId: string | null = null;
 
   // Search & Filter state
   searchQuery = '';
@@ -117,9 +119,20 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   deleteOrder(orderId: string) {
-    if (confirm('¿Está seguro de que desea eliminar este pedido? Esta acción no se puede deshacer.')) {
-      this.stateService.deleteOrder(orderId);
-      this.closeModal();
-    }
+    this.pendingDeleteOrderId = orderId;
+    this.showDeleteOrderModal = true;
+  }
+
+  cancelDeleteOrder() {
+    this.showDeleteOrderModal = false;
+    this.pendingDeleteOrderId = null;
+  }
+
+  confirmDeleteOrder() {
+    if (!this.pendingDeleteOrderId) return;
+
+    this.stateService.deleteOrder(this.pendingDeleteOrderId);
+    this.cancelDeleteOrder();
+    this.closeModal();
   }
 }

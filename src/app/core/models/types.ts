@@ -4,6 +4,11 @@ export interface Client {
   phone: string;
   address: string;
   locationUrl: string;
+  clientType?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Product {
@@ -33,6 +38,7 @@ export type OrderStatus = 'pending' | 'loaded' | 'route' | 'delivered' | 'failed
 
 export interface Order {
   id: string;
+  code?: string;
   clientId: string;
   clientName: string;
   clientLocationUrl?: string;
