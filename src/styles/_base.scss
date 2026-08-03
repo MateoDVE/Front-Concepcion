@@ -433,3 +433,23 @@ input, select, textarea {
   &--success { @include btn(success); }
   &--full { width: 100%; }
 }
+
+// Validation states
+.form-input, .form-select, input, select, textarea {
+  &.is-invalid {
+    border-color: $color-error !important;
+    background-color: rgba($color-error-container, 0.15) !important;
+    
+    &:focus {
+      box-shadow: 0 0 0 2px rgba($color-error, 0.2) !important;
+    }
+  }
+}
+
+.error-text {
+  color: $color-error;
+  font-size: $text-caption;
+  margin-top: $space-1;
+  display: block;
+}
+
