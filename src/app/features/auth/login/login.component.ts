@@ -34,6 +34,8 @@ export class LoginComponent {
         this.isLoading = false;
         if (user.rol === 'admin') {
           this.router.navigate(['/admin/dashboard']);
+        } else if (user.rol === 'almacen') {
+          this.router.navigate(['/almacen/inventario']);
         } else {
           this.router.navigate(['/vendor/ruta']);
         }
