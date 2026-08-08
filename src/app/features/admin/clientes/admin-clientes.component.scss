@@ -443,3 +443,24 @@
     }
   }
 }
+
+.special-prices-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: $space-2;
+  padding-bottom: $space-1;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba($color-outline-variant, 0.5);
+    border-radius: $radius-full;
+  }
+}
+
