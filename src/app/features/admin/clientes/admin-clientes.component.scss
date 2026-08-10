@@ -177,6 +177,10 @@
   z-index: $z-modal;
   @include flex-center();
   padding: clamp($space-4, 4vh, $space-8);
+
+  @include mobile {
+    padding-bottom: calc(#{$bottom-nav-height} + #{$space-5});
+  }
 }
 
 .modal-backdrop-overlay {
@@ -201,6 +205,10 @@
   border: 1px solid rgba($color-outline-variant, 0.45);
   overflow-y: auto;
   margin: auto;
+
+  @include mobile {
+    max-height: 100%;
+  }
 
   &::-webkit-scrollbar {
     width: 8px;
