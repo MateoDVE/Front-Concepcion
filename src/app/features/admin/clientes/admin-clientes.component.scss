@@ -179,6 +179,8 @@
   padding: clamp($space-4, 4vh, $space-8);
 
   @include mobile {
+    align-items: flex-start;
+    padding-top: $space-4;
     padding-bottom: calc(#{$bottom-nav-height} + #{$space-5});
   }
 }
@@ -207,7 +209,9 @@
   margin: auto;
 
   @include mobile {
-    max-height: 100%;
+    max-height: calc(100vh - #{$bottom-nav-height} - #{$space-8});
+    max-height: calc(100dvh - #{$bottom-nav-height} - #{$space-8});
+    margin: 0 auto;
   }
 
   &::-webkit-scrollbar {
