@@ -24,7 +24,7 @@ export class AdminDashboardComponent implements OnInit {
     this.stateService.kpis$.subscribe(k => this.kpis = k);
     
     // Get recent 8 orders, sorted by date desc
-    this.stateService.orders$.pipe(
+    this.stateService.todayOrders$.pipe(
       map(orders => [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 8))
     ).subscribe(o => this.recentOrders = o);
   }

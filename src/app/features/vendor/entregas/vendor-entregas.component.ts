@@ -26,7 +26,7 @@ export class VendorEntregasComponent implements OnInit {
       this.loadCompletedOrders();
     });
 
-    this.stateService.orders$.subscribe(() => {
+    this.stateService.todayOrders$.subscribe(() => {
       this.loadCompletedOrders();
     });
   }
@@ -34,7 +34,7 @@ export class VendorEntregasComponent implements OnInit {
   loadCompletedOrders() {
     if (!this.activeVendor) return;
 
-    this.stateService.orders$.pipe(
+    this.stateService.todayOrders$.pipe(
       map(orders => orders.filter(o => 
         o.vendorId === this.activeVendor?.id && 
         (o.status === 'delivered' || o.status === 'failed')

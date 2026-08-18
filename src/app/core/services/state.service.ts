@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, forkJoin, of } from 'rxjs';
+import { BehaviorSubject, Observable, forkJoin, of, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Client, Product, Vendor, Order, OrderStatus, KPIs } from '../models/types';
 import { APP_CONFIG } from '../config/constants';
@@ -29,13 +29,37 @@ export class StateService {
   orders$ = this.ordersSubject.asObservable();
   activeVendor$ = this.activeVendorSubject.asObservable();
 
+  private isTodayClosedSubject = new BehaviorSubject<boolean>(false);
+  isTodayClosed$ = this.isTodayClosedSubject.asObservable();
+
+  get isTodayClosed(): boolean {
+    return this.isTodayClosedSubject.value;
+  }
+
+  todayOrders$: Observable<Order[]> = combineLatest([this.orders$, this.isTodayClosed$]).pipe(
+    map(([orders, isClosed]) => {
+      if (isClosed) {
+        return [];
+      }
+      const todayStr = this.getLocalDateString();
+      return orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
+    })
+  );
+
   // Computed KPIs Observable
-  kpis$: Observable<KPIs> = this.orders$.pipe(
-    map(orders => {
-      const pending = orders.filter(o => o.status === 'pending').length;
-      const inRoute = orders.filter(o => o.status === 'route' || o.status === 'loaded').length;
-      const delivered = orders.filter(o => o.status === 'delivered').length;
-      const totalRevenue = orders
+  kpis$: Observable<KPIs> = combineLatest([this.orders$, this.isTodayClosed$]).pipe(
+    map(([orders, isClosed]) => {
+      if (isClosed) {
+        return { pending: 0, inRoute: 0, delivered: 0, totalRevenue: 0 };
+      }
+
+      const todayStr = this.getLocalDateString();
+      const todayOrders = orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
+
+      const pending = todayOrders.filter(o => o.status === 'pending').length;
+      const inRoute = todayOrders.filter(o => o.status === 'route' || o.status === 'loaded').length;
+      const delivered = todayOrders.filter(o => o.status === 'delivered').length;
+      const totalRevenue = todayOrders
         .filter(o => o.status === 'delivered')
         .reduce((sum, o) => sum + o.total, 0);
 
@@ -89,7 +113,26 @@ export class StateService {
       error: (err) => console.error('Error loading vendors', err)
     });
 
-    this.loadOrders();
+    this.checkTodayClosedStatus().subscribe({
+      next: () => {
+        this.loadOrders();
+      },
+      error: (err) => {
+        console.error('Error checking today closed status', err);
+        this.loadOrders();
+      }
+    });
+  }
+
+  public checkTodayClosedStatus(): Observable<boolean> {
+    const todayStr = this.getLocalDateString();
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/closings/report/history`).pipe(
+      map(data => {
+        const closed = data.some(r => r.fecha.split('T')[0] === todayStr && r.tipo_registro === 'CERRADO');
+        this.isTodayClosedSubject.next(closed);
+        return closed;
+      })
+    );
   }
 
   public loadClients(): void {
@@ -337,6 +380,7 @@ export class StateService {
     if (closures.length > 0) {
       return forkJoin(closures).pipe(
         map(res => {
+          this.isTodayClosedSubject.next(true);
           this.loadOrders();
           this.loadProducts();
           return res;

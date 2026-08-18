@@ -161,10 +161,9 @@ export class AdminReporteComponent implements OnInit {
 
   checkIfTodayIsClosed() {
     if (typeof window === 'undefined') return;
-    const todayStr = this.getLocalDateString();
-    this.stateService.getHistoryReport().subscribe({
-      next: (data) => {
-        this.isTodayClosed = data.some(r => r.fecha.split('T')[0] === todayStr && r.tipo_registro === 'CERRADO');
+    this.stateService.isTodayClosed$.subscribe({
+      next: (closed) => {
+        this.isTodayClosed = closed;
       },
       error: (err) => console.error('Error checking if today is closed', err)
     });

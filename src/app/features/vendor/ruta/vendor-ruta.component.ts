@@ -37,8 +37,8 @@ export class VendorRutaComponent implements OnInit {
       this.loadVendorOrders();
     });
 
-    // Also watch orders list for updates
-    this.stateService.orders$.subscribe(() => {
+    // Also watch today's orders list for updates
+    this.stateService.todayOrders$.subscribe(() => {
       this.loadVendorOrders();
     });
   }
@@ -46,7 +46,7 @@ export class VendorRutaComponent implements OnInit {
   loadVendorOrders() {
     if (!this.activeVendor) return;
 
-    this.stateService.orders$.pipe(
+    this.stateService.todayOrders$.pipe(
       map(orders => orders.filter(o => o.vendorId === this.activeVendor?.id))
     ).subscribe(orders => {
       this.vendorOrders = orders;
