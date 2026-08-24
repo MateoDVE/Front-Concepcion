@@ -82,7 +82,7 @@
             <!-- Quantity -->
             <div class="form-group flex-1">
               <label class="text-caption text-muted uppercase">Cantidad</label>
-              <input type="number" [(ngModel)]="item.quantity" (ngModelChange)="calculateTotal()" class="form-input text-center" min="1" />
+              <input type="number" [(ngModel)]="item.quantity" inputmode="numeric" pattern="[0-9]*" (ngModelChange)="calculateTotal()" class="form-input text-center" min="1" />
             </div>
 
             <!-- Price -->
@@ -90,7 +90,7 @@
               <label class="text-caption text-muted uppercase">Precio Venta (Sugerido)</label>
               <div class="price-input-wrap">
                 <span class="price-prefix text-body-sm font-semibold text-muted">Bs.</span>
-                <input type="number" [(ngModel)]="item.price" (ngModelChange)="calculateTotal()" class="form-input text-right font-bold" min="0" step="0.5" />
+                <input type="number" [(ngModel)]="item.price" inputmode="decimal" (ngModelChange)="calculateTotal()" class="form-input text-right font-bold" min="0" step="0.5" />
               </div>
               <span *ngIf="selectedClient && item.price !== item.basePrice" class="price-notice text-caption">
                 Base: Bs. {{ item.basePrice }}

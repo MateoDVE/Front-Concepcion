@@ -87,7 +87,8 @@
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Teléfono / WhatsApp *</label>
-          <input type="text" 
+          <input type="tel" 
+                 inputmode="tel"
                  name="clientPhone"
                  [(ngModel)]="newClientPhone" 
                  #phoneInput="ngModel"
@@ -152,6 +153,7 @@
                 <div class="flex items-center gap-2 max-w-[140px]">
                   <span class="text-caption text-muted">Bs.</span>
                   <input type="number" 
+                         inputmode="decimal"
                          name="specialPrice_{{prod.id}}"
                          [(ngModel)]="newClientSpecialPrices[prod.id]" 
                          #specialPriceInput="ngModel"
@@ -240,7 +242,7 @@
             </div>
             <div class="form-group flex-[0.7]">
               <label class="text-caption text-muted uppercase">Precio Especial</label>
-              <input type="number" [(ngModel)]="newSpecialPriceValue" placeholder="0.00" class="form-input w-full" min="0" step="0.5" />
+              <input type="number" [(ngModel)]="newSpecialPriceValue" inputmode="decimal" placeholder="0.00" class="form-input w-full" min="0" step="0.5" />
             </div>
             <button class="btn btn-add-price flex items-center justify-center gap-1" (click)="addSpecialPrice()">
               <span class="material-symbols-outlined text-sm">add</span> Guardar
