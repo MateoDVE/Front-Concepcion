@@ -53,7 +53,7 @@
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase font-bold">Cantidad Producida a Agregar *</label>
-          <input type="number" [(ngModel)]="editProdAddStock" class="form-input w-full font-semibold text-body-lg" min="1" placeholder="Ej. 50" autofocus />
+          <input type="number" [(ngModel)]="editProdAddStock" inputmode="numeric" pattern="[0-9]*" class="form-input w-full font-semibold text-body-lg" min="1" placeholder="Ej. 50" autofocus />
           <span class="text-caption text-muted mt-1 block">
             Introduce la cantidad total de {{ selectedProduct.unit }}s que se produjeron y se ingresarán al almacén hoy.
           </span>

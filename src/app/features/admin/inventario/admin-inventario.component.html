@@ -70,6 +70,7 @@
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
           <input type="number" 
+                 inputmode="decimal"
                  name="prodPrice"
                  [(ngModel)]="newProdPrice" 
                  #prodPriceInput="ngModel"
@@ -87,6 +88,8 @@
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Stock Inicial *</label>
           <input type="number" 
+                 inputmode="numeric"
+                 pattern="[0-9]*"
                  name="prodStock"
                  [(ngModel)]="newProdStock" 
                  #prodStockInput="ngModel"
@@ -144,12 +147,12 @@
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
-          <input type="number" [(ngModel)]="editProdPrice" class="form-input w-full" min="0.1" />
+          <input type="number" [(ngModel)]="editProdPrice" inputmode="decimal" class="form-input w-full" min="0.1" />
         </div>
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Reabastecer Stock (Añadir cantidad)</label>
-          <input type="number" [(ngModel)]="editProdAddStock" class="form-input w-full" placeholder="Introduce valor positivo o negativo..." />
+          <input type="number" [(ngModel)]="editProdAddStock" inputmode="tel" class="form-input w-full" placeholder="Introduce valor positivo o negativo..." />
           <span class="text-caption text-muted mt-1 block">
             Ej: ingresa 50 para sumar, o -10 para restar del stock actual.
           </span>
