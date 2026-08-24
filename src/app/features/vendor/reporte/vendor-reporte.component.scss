@@ -78,3 +78,22 @@
     color: $color-outline-variant;
   }
 }
+
+.input-date-picker {
+  padding: $space-2 $space-4;
+  border-radius: $radius-default;
+  border: 1px solid rgba($color-outline-variant, 0.6);
+  font-family: inherit;
+  font-size: $text-body-md;
+  color: $color-on-surface;
+  background-color: $color-surface-container-lowest;
+  outline: none;
+  transition: border-color 0.2s ease;
+  min-width: 160px;
+
+  &:focus {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
+  }
+}
+
