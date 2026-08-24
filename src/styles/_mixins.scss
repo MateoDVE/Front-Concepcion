@@ -63,10 +63,12 @@
   @include card($elevation);
   cursor: pointer;
   
-  &:hover {
-    border-color: $color-primary;
-    box-shadow: $shadow-md;
-    transform: translateY(-2px);
+  @media (hover: hover) {
+    &:hover {
+      border-color: $color-primary;
+      box-shadow: $shadow-md;
+      transform: translateY(-2px);
+    }
   }
   
   &:active {
@@ -126,40 +128,50 @@
     color: $color-on-primary;
     box-shadow: 0 4px 12px rgba($color-primary-container, 0.2);
     
-    &:hover {
-      opacity: 0.95;
-      box-shadow: 0 6px 16px rgba($color-primary-container, 0.3);
+    @media (hover: hover) {
+      &:hover {
+        opacity: 0.95;
+        box-shadow: 0 6px 16px rgba($color-primary-container, 0.3);
+      }
     }
   } @else if $type == secondary {
     background: $color-surface-container-high;
     color: $color-on-surface;
     
-    &:hover {
-      background: $color-surface-container-highest;
+    @media (hover: hover) {
+      &:hover {
+        background: $color-surface-container-highest;
+      }
     }
   } @else if $type == outline {
     background: transparent;
     border: 1px solid $color-outline-variant;
     color: $color-on-surface-variant;
     
-    &:hover {
-      background: $color-surface-container-low;
-      color: $color-on-surface;
-      border-color: $color-outline;
+    @media (hover: hover) {
+      &:hover {
+        background: $color-surface-container-low;
+        color: $color-on-surface;
+        border-color: $color-outline;
+      }
     }
   } @else if $type == error {
     background: $color-error;
     color: $color-on-error;
     
-    &:hover {
-      background: color.adjust($color-error, $lightness: -5%);
+    @media (hover: hover) {
+      &:hover {
+        background: color.adjust($color-error, $lightness: -5%);
+      }
     }
   } @else if $type == success {
     background: $color-secondary;
     color: $color-on-secondary;
     
-    &:hover {
-      background: color.adjust($color-secondary, $lightness: -5%);
+    @media (hover: hover) {
+      &:hover {
+        background: color.adjust($color-secondary, $lightness: -5%);
+      }
     }
   }
 }
