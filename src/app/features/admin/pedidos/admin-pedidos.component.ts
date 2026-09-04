@@ -82,7 +82,22 @@ export class AdminPedidosComponent implements OnInit {
   formatDate(dateStr: string | null): string {
     if (!dateStr) return '--:--';
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    if (isNaN(d.getTime())) return '--:--';
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    if (isToday) {
+      return d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  formatFullDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '--/--/----';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '--/--/----';
+    const date = d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    return `${date}, ${time}`;
   }
 
   getStatusLabel(status: OrderStatus): string {

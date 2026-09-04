@@ -81,6 +81,15 @@
           <p class="detail-value font-bold text-body-lg">{{ selectedOrder.clientName }}</p>
         </div>
 
+        <!-- Fecha del Pedido -->
+        <div class="detail-block">
+          <span class="detail-label text-caption text-muted uppercase">Fecha del Pedido</span>
+          <p class="detail-value font-semibold text-body-md flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-muted">calendar_today</span>
+            {{ formatFullDate(selectedOrder.createdAt) }}
+          </p>
+        </div>
+
         <div class="detail-block">
           <span class="detail-label text-caption text-muted uppercase">Vendedor Asignado</span>
           <p class="detail-value font-semibold text-body-md">{{ selectedOrder.vendorName || 'Sin asignar' }}</p>
@@ -93,6 +102,15 @@
           </div>
           <p *ngIf="selectedOrder.failedReason" class="text-error text-body-sm mt-1 font-medium">
             Motivo: {{ selectedOrder.failedReason }}
+          </p>
+        </div>
+
+        <!-- Fecha de Entrega (solo si fue entregado) -->
+        <div class="detail-block" *ngIf="selectedOrder.deliveredAt && selectedOrder.status === 'delivered'">
+          <span class="detail-label text-caption text-muted uppercase">Fecha de Entrega</span>
+          <p class="detail-value font-semibold text-body-md flex items-center gap-1.5 text-success">
+            <span class="material-symbols-outlined text-sm text-success">check_circle</span>
+            {{ formatFullDate(selectedOrder.deliveredAt) }}
           </p>
         </div>
 
