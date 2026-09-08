@@ -41,6 +41,7 @@ export interface Order {
   code?: string;
   clientId: string;
   clientName: string;
+  clientPhone?: string;
   clientLocationUrl?: string;
   vendorId: string | null;
   vendorName: string | null;
