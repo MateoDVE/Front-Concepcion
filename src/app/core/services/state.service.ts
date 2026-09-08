@@ -2,7 +2,7 @@ import { Injectable, inject, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, forkJoin, of, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap, catchError, tap } from 'rxjs/operators';
 import { Client, Product, Vendor, Order, OrderStatus, KPIs } from '../models/types';
 import { APP_CONFIG } from '../config/constants';
 import { AuthService } from './auth.service';
@@ -246,6 +246,31 @@ export class StateService {
     });
   }
 
+  updateClient(
+    id: string,
+    data: {
+      name?: string;
+      phone?: string;
+      address?: string;
+      locationUrl?: string;
+      clientType?: string;
+    }
+  ): Observable<Client> {
+    const body: any = {};
+    if (data.name !== undefined) body.nombre = data.name;
+    if (data.phone !== undefined) body.telefono = data.phone;
+    if (data.address !== undefined) body.direccion = data.address;
+    if (data.locationUrl !== undefined) body.ubicacion_url = data.locationUrl;
+    if (data.clientType !== undefined) body.tipo_cliente = data.clientType;
+
+    return this.http.put<any>(`${APP_CONFIG.apiUrl}/clients/${id}`, body).pipe(
+      map(updated => {
+        this.loadClients();
+        return this.mapClient(updated);
+      })
+    );
+  }
+
   addProduct(name: string, basePrice: number, stock: number, unit: string): void {
     const body = {
       nombre: name,
@@ -343,7 +368,17 @@ export class StateService {
     });
   }
 
-  // ---- Closing Day operability ----
+  // ---- Closing Day and Reschedule operability ----
+  moveUnfulfilledOrdersToNextDay(fecha?: string): Observable<any> {
+    const body = fecha ? { fecha } : {};
+    return this.http.post<any>(`${APP_CONFIG.apiUrl}/orders/move-to-next-day`, body).pipe(
+      tap(() => {
+        this.loadOrders();
+        this.loadProducts();
+      })
+    );
+  }
+
   resetData(): Observable<any> {
     // Perform daily closures on the backend for each vendor that has orders today
     const orders = this.ordersSubject.value;
@@ -377,18 +412,25 @@ export class StateService {
       }
     });
 
-    if (closures.length > 0) {
-      return forkJoin(closures).pipe(
-        map(res => {
-          this.isTodayClosedSubject.next(true);
-          this.loadOrders();
-          this.loadProducts();
-          return res;
-        })
-      );
-    } else {
-      return of([]);
-    }
+    const closureAction$ = closures.length > 0 ? forkJoin(closures) : of([]);
+
+    return closureAction$.pipe(
+      switchMap(res => {
+        return this.moveUnfulfilledOrdersToNextDay(this.getLocalDateString()).pipe(
+          map(() => res),
+          catchError(err => {
+            console.error('Error trasladando pedidos pendientes al día siguiente:', err);
+            return of(res);
+          })
+        );
+      }),
+      map(res => {
+        this.isTodayClosedSubject.next(true);
+        this.loadOrders();
+        this.loadProducts();
+        return res;
+      })
+    );
   }
 
   getLocalDateString(date: Date = new Date()): string {

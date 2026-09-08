@@ -81,6 +81,8 @@ export class AdminReporteComponent implements OnInit {
   feedbackTone: 'info' | 'success' | 'warning' | 'error' = 'info';
   private feedbackAfterClose: (() => void) | null = null;
   showCloseDayModal = false;
+  showMoveModal = false;
+  isMovingOrders = false;
 
   ngOnInit() {
     this.checkIfTodayIsClosed();
@@ -175,6 +177,40 @@ export class AdminReporteComponent implements OnInit {
 
   cancelCloseDay() {
     this.showCloseDayModal = false;
+  }
+
+  openMoveModal() {
+    this.showMoveModal = true;
+  }
+
+  cancelMoveModal() {
+    this.showMoveModal = false;
+  }
+
+  confirmMoveOrders() {
+    this.isMovingOrders = true;
+    this.stateService.moveUnfulfilledOrdersToNextDay(this.getLocalDateString()).subscribe({
+      next: (res) => {
+        this.isMovingOrders = false;
+        this.showMoveModal = false;
+        const count = res?.movedCount ?? (this.pendingCount + this.failedCount);
+        const targetDate = res?.targetDate || 'mañana';
+        this.openFeedbackModal(
+          'Pedidos Reprogramados',
+          `Se han trasladado ${count} pedido(s) a la jornada siguiente (${targetDate}) con estado Pendiente.`,
+          'success',
+          () => {
+            this.stateService.loadOrders();
+          }
+        );
+      },
+      error: (err) => {
+        console.error('Error al mover pedidos al día siguiente', err);
+        this.isMovingOrders = false;
+        this.showMoveModal = false;
+        this.openFeedbackModal('Error', 'No se pudieron trasladar los pedidos al día siguiente.', 'error');
+      }
+    });
   }
 
   openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {

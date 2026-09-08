@@ -39,6 +39,9 @@
               No se encontraron clientes
             </div>
           </div>
+          <button *ngIf="selectedClientId" class="btn btn--outline py-3 px-3 flex items-center justify-center gap-1 shrink-0 text-primary" (click)="openEditClientModal()" title="Editar cliente seleccionado">
+            <span class="material-symbols-outlined text-lg">edit</span>
+          </button>
           <button class="btn btn--secondary py-3 px-4 flex items-center justify-center gap-1 shrink-0" (click)="openRegisterClientModal()" title="Registrar Cliente">
             <span class="material-symbols-outlined text-lg">person_add</span>
           </button>
@@ -67,7 +70,7 @@
           
           <div class="form-group">
             <label class="text-caption text-muted uppercase">Precio Unitario (Bs.)</label>
-            <input type="number" [(ngModel)]="productPrice" inputmode="decimal" min="0" step="0.1" class="form-input w-full py-3" [disabled]="!selectedProductId" />
+            <input type="text" appDecimalInput [(ngModel)]="productPrice" min="0" placeholder="0.00" class="form-input w-full py-3" [disabled]="!selectedProductId" />
           </div>
         </div>
 
@@ -168,6 +171,49 @@
         <button class="btn btn--outline flex-1" (click)="closeRegisterClientModal()">Cancelar</button>
         <button class="btn btn--primary flex-[1.5]" (click)="registerClient()">
           <span class="material-symbols-outlined">check</span> Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Client Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditClientModal">
+    <div class="modal-backdrop-overlay" (click)="closeEditClientModal()"></div>
+    
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Editar Cliente</h3>
+        <button class="modal-close-btn" (click)="closeEditClientModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Nombre del Cliente *</label>
+          <input type="text" [(ngModel)]="editClientName" placeholder="Ej. Tienda Doña María" class="form-input w-full py-3" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Teléfono *</label>
+          <input type="tel" [(ngModel)]="editClientPhone" inputmode="tel" placeholder="Ej. 78945612" class="form-input w-full py-3" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Dirección *</label>
+          <input type="text" [(ngModel)]="editClientAddress" placeholder="Ej. Av. Blanco Galindo Km 4" class="form-input w-full py-3" />
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Enlace de Google Maps</label>
+          <input type="text" [(ngModel)]="editClientLocationUrl" placeholder="Ej. https://maps.app.goo.gl/..." class="form-input w-full py-3" />
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="closeEditClientModal()">Cancelar</button>
+        <button class="btn btn--primary flex-[1.5]" (click)="saveEditClient()">
+          <span class="material-symbols-outlined">save</span> Guardar Cambios
         </button>
       </div>
     </div>

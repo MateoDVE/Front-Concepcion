@@ -47,7 +47,12 @@
         <button class="action-link text-body-sm font-semibold" (click)="$event.stopPropagation(); openMap(client.locationUrl)">
           <span class="material-symbols-outlined text-sm">map</span> Ver Mapa
         </button>
-        <span class="material-symbols-outlined chevron">chevron_right</span>
+        <div class="flex items-center gap-2">
+          <button class="action-link text-body-sm font-semibold" (click)="$event.stopPropagation(); openEditModal(client)" title="Editar cliente">
+            <span class="material-symbols-outlined text-sm">edit</span> Editar
+          </button>
+          <span class="material-symbols-outlined chevron">chevron_right</span>
+        </div>
       </div>
     </div>
   </section>
@@ -152,16 +157,15 @@
                 <span class="text-body-sm font-semibold text-primary">{{ prod.name }} <span class="text-muted font-normal">({{ formatCurrency(prod.basePrice) }})</span></span>
                 <div class="flex items-center gap-2 max-w-[140px]">
                   <span class="text-caption text-muted">Bs.</span>
-                  <input type="number" 
-                         inputmode="decimal"
+                  <input type="text" 
+                         appDecimalInput
                          name="specialPrice_{{prod.id}}"
                          [(ngModel)]="newClientSpecialPrices[prod.id]" 
                          #specialPriceInput="ngModel"
                          placeholder="Base" 
                          class="form-input text-right py-1 px-2 text-body-sm w-full" 
                          [class.is-invalid]="specialPriceInput.invalid && (specialPriceInput.dirty || specialPriceInput.touched || clientForm.submitted)"
-                         min="0" 
-                         step="0.5" />
+                         min="0" />
                 </div>
               </div>
             </div>
@@ -178,16 +182,117 @@
     </form>
   </div>
 
+  <!-- Edit Client Form Modal -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal">
+    <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
+    
+    <form #editClientForm="ngForm" (ngSubmit)="saveEditClient(editClientForm)" novalidate class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary">Editar Cliente</h3>
+        <button type="button" class="modal-close-btn" (click)="closeEditModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-4">
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Nombre del Cliente *</label>
+          <input type="text" 
+                 name="editClientName"
+                 [(ngModel)]="editClientName" 
+                 #editNameInput="ngModel" 
+                 required 
+                 class="form-input w-full" 
+                 [class.is-invalid]="editNameInput.invalid && (editNameInput.dirty || editNameInput.touched || editClientForm.submitted)"
+                 placeholder="Ej. Minimarket La Esquina" />
+          <span *ngIf="editNameInput.invalid && (editNameInput.dirty || editNameInput.touched || editClientForm.submitted)" class="error-text">
+            El nombre del cliente es obligatorio.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Teléfono / WhatsApp *</label>
+          <input type="tel" 
+                 inputmode="tel"
+                 name="editClientPhone"
+                 [(ngModel)]="editClientPhone" 
+                 #editPhoneInput="ngModel" 
+                 required 
+                 pattern="^[+0-9\s\-]{7,15}$"
+                 class="form-input w-full" 
+                 [class.is-invalid]="editPhoneInput.invalid && (editPhoneInput.dirty || editPhoneInput.touched || editClientForm.submitted)"
+                 placeholder="Ej. +591 70000000" />
+          <span *ngIf="editPhoneInput.invalid && (editPhoneInput.dirty || editPhoneInput.touched || editClientForm.submitted)" class="error-text">
+            <span *ngIf="editPhoneInput.errors?.['required']">El teléfono es obligatorio.</span>
+            <span *ngIf="editPhoneInput.errors?.['pattern']">El teléfono debe tener entre 7 y 15 dígitos (solo números, espacios, '+' o '-').</span>
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Dirección de Entrega *</label>
+          <input type="text" 
+                 name="editClientAddress"
+                 [(ngModel)]="editClientAddress" 
+                 #editAddressInput="ngModel" 
+                 required 
+                 class="form-input w-full" 
+                 [class.is-invalid]="editAddressInput.invalid && (editAddressInput.dirty || editAddressInput.touched || editClientForm.submitted)"
+                 placeholder="Ej. Av. Piraí entre 3er y 4to anillo" />
+          <span *ngIf="editAddressInput.invalid && (editAddressInput.dirty || editAddressInput.touched || editClientForm.submitted)" class="error-text">
+            La dirección de entrega es obligatoria.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Enlace de Google Maps (Opcional)</label>
+          <input type="text" 
+                 name="editClientLocationUrl"
+                 [(ngModel)]="editClientLocationUrl" 
+                 #editLocationInput="ngModel" 
+                 pattern="^https?://.+$"
+                 class="form-input w-full" 
+                 [class.is-invalid]="editLocationInput.invalid && (editLocationInput.dirty || editLocationInput.touched || editClientForm.submitted)"
+                 placeholder="Ej. https://maps.google.com/..." />
+          <span *ngIf="editLocationInput.invalid && (editLocationInput.dirty || editLocationInput.touched || editClientForm.submitted)" class="error-text">
+            Debe ser un enlace web válido (iniciando con http:// o https://).
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="text-caption text-muted uppercase">Tipo de Cliente *</label>
+          <select name="editClientType" [(ngModel)]="editClientType" class="form-select w-full">
+            <option value="Particular">Particular</option>
+            <option value="Minimarket">Minimarket</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Distribuidor">Distribuidor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button type="button" class="btn btn--outline flex-1" (click)="closeEditModal()">Cancelar</button>
+        <button type="submit" class="btn btn--primary flex-[1.5]">
+          <span class="material-symbols-outlined">save</span> Guardar Cambios
+        </button>
+      </div>
+    </form>
+  </div>
+
   <!-- Client Details & History Modal -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDetailModal && selectedClient">
     <div class="modal-backdrop-overlay" (click)="closeDetailModal()"></div>
     
     <div class="modal-card modal-card--large animate-slide-up">
-      <div class="modal-header mb-4">
+      <div class="modal-header mb-4 flex justify-between items-center">
         <h3 class="text-headline-md font-bold text-primary">Detalle del Cliente</h3>
-        <button class="modal-close-btn" (click)="closeDetailModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button class="btn btn--outline btn--sm flex items-center gap-1 py-1 px-3 text-body-sm" (click)="openEditModal(selectedClient)">
+            <span class="material-symbols-outlined text-sm">edit</span> Editar
+          </button>
+          <button class="modal-close-btn" (click)="closeDetailModal()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
       </div>
 
       <div class="modal-body space-y-4">
@@ -242,7 +347,7 @@
             </div>
             <div class="form-group flex-[0.7]">
               <label class="text-caption text-muted uppercase">Precio Especial</label>
-              <input type="number" [(ngModel)]="newSpecialPriceValue" inputmode="decimal" placeholder="0.00" class="form-input w-full" min="0" step="0.5" />
+              <input type="text" appDecimalInput [(ngModel)]="newSpecialPriceValue" placeholder="0.00" class="form-input w-full" min="0" />
             </div>
             <button class="btn btn-add-price flex items-center justify-center gap-1" (click)="addSpecialPrice()">
               <span class="material-symbols-outlined text-sm">add</span> Guardar
@@ -290,8 +395,11 @@
         </div>
       </div>
 
-      <div class="modal-footer mt-6">
-        <button class="btn btn--outline btn--full" (click)="closeDetailModal()">Cerrar</button>
+      <div class="modal-footer mt-6 flex gap-3">
+        <button class="btn btn--outline flex-1" (click)="closeDetailModal()">Cerrar</button>
+        <button class="btn btn--primary flex-[1.5] flex items-center justify-center gap-1" (click)="openEditModal(selectedClient)">
+          <span class="material-symbols-outlined">edit</span> Editar Cliente
+        </button>
       </div>
     </div>
   </div>

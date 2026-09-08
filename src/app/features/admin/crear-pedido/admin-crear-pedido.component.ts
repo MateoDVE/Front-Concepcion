@@ -5,6 +5,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
 import { Client, Product, Vendor, Order, OrderItem } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
+import { DecimalInputDirective } from '../../../core/directives/decimal-input.directive';
 
 interface OrderFormItem {
   productId: string;
@@ -16,7 +17,7 @@ interface OrderFormItem {
 
 @Component({
   selector: 'app-admin-crear-pedido',
-  imports: [CommonModule, FormsModule, RouterLink, FeedbackModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './admin-crear-pedido.component.html',
   styleUrl: './admin-crear-pedido.component.scss',
   standalone: true
@@ -213,7 +214,7 @@ export class AdminCrearPedidoComponent implements OnInit {
   }
 
   calculateTotal() {
-    this.orderTotal = this.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    this.orderTotal = this.orderItems.reduce((sum, item) => sum + ((Number(item.price) || 0) * item.quantity), 0);
   }
 
   openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {
@@ -249,7 +250,8 @@ export class AdminCrearPedidoComponent implements OnInit {
         this.openFeedbackModal('Cantidad inválida', `La cantidad para ${item.name} debe ser mayor a 0.`, 'warning');
         return;
       }
-      if (item.price < 0) {
+      const priceNum = Number(item.price);
+      if (isNaN(priceNum) || priceNum < 0) {
         this.openFeedbackModal('Precio inválido', `El precio para ${item.name} no puede ser negativo.`, 'warning');
         return;
       }
@@ -267,7 +269,7 @@ export class AdminCrearPedidoComponent implements OnInit {
         productId: item.productId,
         name: item.name,
         quantity: item.quantity,
-        price: item.price
+        price: Number(item.price) || 0
       })),
       total: this.orderTotal
     };

@@ -4,10 +4,11 @@ import { StateService } from '../../../core/services/state.service';
 import { Order, Vendor, OrderStatus, Client, Product } from '../../../core/models/types';
 import { FormsModule } from '@angular/forms';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
+import { DecimalInputDirective } from '../../../core/directives/decimal-input.directive';
 
 @Component({
   selector: 'app-vendor-ventas',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './vendor-ventas.component.html',
   styleUrl: './vendor-ventas.component.scss',
   standalone: true
@@ -32,6 +33,13 @@ export class VendorVentasComponent implements OnInit {
   newClientPhone = '';
   newClientAddress = '';
   newClientLocationUrl = '';
+
+  // Form Fields for Edit Client
+  showEditClientModal = false;
+  editClientName = '';
+  editClientPhone = '';
+  editClientAddress = '';
+  editClientLocationUrl = '';
 
   // Form Fields for Direct Sale
   selectedClientId = '';
@@ -108,6 +116,49 @@ export class VendorVentasComponent implements OnInit {
     this.openFeedbackModal('Cliente registrado', 'Cliente registrado con éxito.', 'success');
   }
 
+  openEditClientModal() {
+    if (!this.selectedClientId) return;
+    const client = this.clients.find(c => c.id === this.selectedClientId);
+    if (!client) return;
+
+    this.editClientName = client.name;
+    this.editClientPhone = client.phone;
+    this.editClientAddress = client.address;
+    this.editClientLocationUrl = client.locationUrl || '';
+    this.showEditClientModal = true;
+  }
+
+  closeEditClientModal() {
+    this.showEditClientModal = false;
+  }
+
+  saveEditClient() {
+    if (!this.selectedClientId) return;
+    if (!this.editClientName.trim() || !this.editClientPhone.trim() || !this.editClientAddress.trim()) {
+      this.openFeedbackModal('Campos obligatorios', 'Por favor complete todos los campos obligatorios: Nombre, Teléfono y Dirección.', 'warning');
+      return;
+    }
+
+    const mapUrl = this.editClientLocationUrl.trim() || `https://maps.google.com/?q=${encodeURIComponent(this.editClientAddress.trim())}`;
+
+    this.stateService.updateClient(this.selectedClientId, {
+      name: this.editClientName.trim(),
+      phone: this.editClientPhone.trim(),
+      address: this.editClientAddress.trim(),
+      locationUrl: mapUrl
+    }).subscribe({
+      next: (updatedClient) => {
+        this.clientSearchQuery = updatedClient.name;
+        this.closeEditClientModal();
+        this.openFeedbackModal('Cliente actualizado', 'Datos del cliente actualizados con éxito.', 'success');
+      },
+      error: (err) => {
+        console.error('Error al actualizar cliente:', err);
+        this.openFeedbackModal('Error', 'No se pudo actualizar los datos del cliente.', 'error');
+      }
+    });
+  }
+
   // ---- Direct Sale (Venta Directa) Flow ----
   onClientOrProductChange() {
     if (this.selectedClientId && this.selectedProductId) {
@@ -130,15 +181,16 @@ export class VendorVentasComponent implements OnInit {
     const product = this.products.find(p => p.id === this.selectedProductId);
     if (!product) return;
 
+    const priceVal = Number(this.productPrice) || 0;
     const existingItem = this.saleItems.find(item => item.product.id === product.id);
     if (existingItem) {
       existingItem.quantity += this.productQuantity;
-      existingItem.price = this.productPrice;
+      existingItem.price = priceVal;
     } else {
       this.saleItems.push({
         product,
         quantity: this.productQuantity,
-        price: this.productPrice
+        price: priceVal
       });
     }
 

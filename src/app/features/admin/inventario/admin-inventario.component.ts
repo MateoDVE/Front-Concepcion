@@ -4,10 +4,11 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Product } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
+import { DecimalInputDirective } from '../../../core/directives/decimal-input.directive';
 
 @Component({
   selector: 'app-admin-inventario',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './admin-inventario.component.html',
   styleUrl: './admin-inventario.component.scss',
   standalone: true
@@ -79,14 +80,15 @@ export class AdminInventarioComponent implements OnInit {
       return;
     }
 
-    if (!this.newProdName.trim() || this.newProdPrice <= 0 || this.newProdStock < 0) {
+    const priceNum = Number(this.newProdPrice);
+    if (!this.newProdName.trim() || isNaN(priceNum) || priceNum <= 0 || this.newProdStock < 0) {
       this.openFeedbackModal('Campos inválidos', 'Por favor completa los campos con valores válidos (precio > 0, stock >= 0).', 'warning');
       return;
     }
 
     this.stateService.addProduct(
       this.newProdName.trim(),
-      this.newProdPrice,
+      priceNum,
       this.newProdStock,
       this.newProdUnit
     );
@@ -110,14 +112,15 @@ export class AdminInventarioComponent implements OnInit {
   saveEditProduct() {
     if (!this.selectedProduct) return;
 
-    if (this.editProdPrice <= 0) {
+    const priceNum = Number(this.editProdPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
       this.openFeedbackModal('Precio inválido', 'Por favor introduce un precio base válido.', 'warning');
       return;
     }
 
     // Apply price change if modified
-    if (this.editProdPrice !== this.selectedProduct.basePrice) {
-      this.stateService.updateProductBasePrice(this.selectedProduct.id, this.editProdPrice);
+    if (priceNum !== this.selectedProduct.basePrice) {
+      this.stateService.updateProductBasePrice(this.selectedProduct.id, priceNum);
     }
 
     // Apply stock adjustment if non-zero

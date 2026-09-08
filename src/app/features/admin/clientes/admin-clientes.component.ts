@@ -5,10 +5,11 @@ import { StateService } from '../../../core/services/state.service';
 import { Client, Order, OrderStatus, Product } from '../../../core/models/types';
 import { map } from 'rxjs/operators';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
+import { DecimalInputDirective } from '../../../core/directives/decimal-input.directive';
 
 @Component({
   selector: 'app-admin-clientes',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './admin-clientes.component.html',
   styleUrl: './admin-clientes.component.scss',
   standalone: true
@@ -47,6 +48,15 @@ export class AdminClientesComponent implements OnInit {
   newClientLocationUrl = '';
   newClientType = 'Particular';
   newClientSpecialPrices: Record<string, number | null> = {};
+
+  // Edit Client Form State
+  showEditModal = false;
+  editingClientId = '';
+  editClientName = '';
+  editClientPhone = '';
+  editClientAddress = '';
+  editClientLocationUrl = '';
+  editClientType = 'Particular';
 
   ngOnInit() {
     this.stateService.clients$.subscribe(c => {
@@ -143,6 +153,60 @@ export class AdminClientesComponent implements OnInit {
     this.showAddModal = false;
   }
 
+  openEditModal(client: Client) {
+    this.editingClientId = client.id;
+    this.editClientName = client.name;
+    this.editClientPhone = client.phone;
+    this.editClientAddress = client.address;
+    this.editClientLocationUrl = client.locationUrl || '';
+    this.editClientType = client.clientType || 'Particular';
+    this.showEditModal = true;
+  }
+
+  closeEditModal() {
+    this.showEditModal = false;
+    this.editingClientId = '';
+    this.editClientName = '';
+    this.editClientPhone = '';
+    this.editClientAddress = '';
+    this.editClientLocationUrl = '';
+    this.editClientType = 'Particular';
+  }
+
+  saveEditClient(form?: NgForm) {
+    if (form && form.invalid) {
+      this.openFeedbackModal('Campos inválidos', 'Por favor completa todos los campos obligatorios con datos válidos.', 'warning');
+      return;
+    }
+
+    if (!this.editClientName.trim() || !this.editClientPhone.trim() || !this.editClientAddress.trim()) {
+      this.openFeedbackModal('Campos obligatorios', 'Nombre, teléfono y dirección son obligatorios.', 'warning');
+      return;
+    }
+
+    const mapUrl = this.editClientLocationUrl.trim() || `https://maps.google.com/?q=${encodeURIComponent(this.editClientAddress.trim())}`;
+
+    this.stateService.updateClient(this.editingClientId, {
+      name: this.editClientName.trim(),
+      phone: this.editClientPhone.trim(),
+      address: this.editClientAddress.trim(),
+      locationUrl: mapUrl,
+      clientType: this.editClientType
+    }).subscribe({
+      next: (updatedClient) => {
+        if (this.selectedClient && this.selectedClient.id === this.editingClientId) {
+          this.selectedClient = updatedClient;
+        }
+        this.closeEditModal();
+        this.openFeedbackModal('Cliente actualizado', 'Los datos del cliente se actualizaron con éxito.', 'success');
+      },
+      error: (err) => {
+        console.error('Error al actualizar cliente:', err);
+        this.openFeedbackModal('Error', 'No se pudo actualizar el cliente.', 'error');
+      }
+    });
+  }
+
   openFeedbackModal(title: string, message: string, tone: 'info' | 'success' | 'warning' | 'error' = 'info', afterClose?: () => void) {
     this.feedbackTitle = title;
     this.feedbackMessage = message;
@@ -174,7 +238,7 @@ export class AdminClientesComponent implements OnInit {
 
     // Build the list of special prices to save
     const specialPricesToSend = Object.entries(this.newClientSpecialPrices)
-      .filter(([_, val]) => val !== null && val !== undefined && val >= 0)
+      .filter(([_, val]) => val !== null && val !== undefined && !isNaN(Number(val)) && Number(val) >= 0)
       .map(([prodId, val]) => ({
         producto_id: prodId,
         precio_especial: Number(val)
@@ -213,7 +277,11 @@ export class AdminClientesComponent implements OnInit {
       this.openFeedbackModal('Producto requerido', 'Por favor selecciona un producto.', 'warning');
       return;
     }
-    if (this.newSpecialPriceValue === null || this.newSpecialPriceValue < 0) {
+    const priceVal = (this.newSpecialPriceValue !== null && this.newSpecialPriceValue !== undefined) 
+      ? Number(this.newSpecialPriceValue) 
+      : NaN;
+
+    if (isNaN(priceVal) || priceVal < 0) {
       this.openFeedbackModal('Precio inválido', 'Por favor introduce un precio especial válido (mayor o igual a 0).', 'warning');
       return;
     }
@@ -221,7 +289,7 @@ export class AdminClientesComponent implements OnInit {
     this.stateService.setClientSpecialPrice(
       this.selectedClient.id,
       this.newSpecialPriceProductId,
-      this.newSpecialPriceValue
+      priceVal
     ).subscribe({
       next: () => {
         const clientId = this.selectedClient!.id;
