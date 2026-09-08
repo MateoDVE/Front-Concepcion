@@ -69,8 +69,8 @@
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
-          <input type="number" 
-                 inputmode="decimal"
+          <input type="text" 
+                 appDecimalInput
                  name="prodPrice"
                  [(ngModel)]="newProdPrice" 
                  #prodPriceInput="ngModel"
@@ -147,7 +147,7 @@
 
         <div class="form-group">
           <label class="text-caption text-muted uppercase">Precio Base (Bs.) *</label>
-          <input type="number" [(ngModel)]="editProdPrice" inputmode="decimal" class="form-input w-full" min="0.1" />
+          <input type="text" appDecimalInput [(ngModel)]="editProdPrice" class="form-input w-full" min="0.01" placeholder="0.00" />
         </div>
 
         <div class="form-group">

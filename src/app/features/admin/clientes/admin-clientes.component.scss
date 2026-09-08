@@ -75,6 +75,8 @@
     }
 
     .meta {
+      flex: 1;
+      min-width: 0;
       @include flex-column(center, flex-start, 2px);
       
       .name {
@@ -86,6 +88,20 @@
         .material-symbols-outlined {
           color: $color-primary-container;
         }
+      }
+    }
+
+    .card-edit-btn {
+      color: $color-outline;
+      padding: $space-1;
+      border-radius: $radius-full;
+      transition: all $transition-fast;
+      @include flex-center();
+      flex-shrink: 0;
+
+      &:hover {
+        color: $color-primary-container;
+        background: rgba($color-primary-container, 0.1);
       }
     }
   }

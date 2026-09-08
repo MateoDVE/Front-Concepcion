@@ -1,14 +1,26 @@
 <div class="container animate-fade-in">
   <!-- Page Header -->
-  <div class="page-header mb-6">
-    <h2 class="text-headline-xl text-primary">Listado de Pedidos</h2>
-    <p class="text-muted text-body-md">Consulta, filtra y gestiona todos los pedidos del día.</p>
+  <div class="page-header mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-headline-xl text-primary font-bold">Listado de Pedidos</h2>
+      <p class="text-muted text-body-md">Consulta, filtra y gestiona todos los pedidos del día.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="btn btn--outline flex items-center gap-2" 
+              (click)="openMoveModal()"
+              [disabled]="unfulfilledCount === 0"
+              title="Mover pedidos no completados al día siguiente">
+        <span class="material-symbols-outlined">update</span>
+        <span>Mover al día siguiente</span>
+        <span class="badge badge--pending text-xs ml-1" *ngIf="unfulfilledCount > 0">{{ unfulfilledCount }}</span>
+      </button>
+    </div>
   </div>
 
   <!-- Search & Filter Controls -->
-  <section class="controls-card mb-6">
+  <section class="controls-card mb-6 space-y-4">
     <!-- Search bar -->
-    <div class="search-bar-wrap mb-4">
+    <div class="search-bar-wrap">
       <span class="material-symbols-outlined search-icon">search</span>
       <input type="text" 
              placeholder="Buscar por cliente, ID o vendedor..." 
@@ -17,7 +29,28 @@
              class="search-input" />
     </div>
 
-    <!-- Filter Chips -->
+    <!-- Date Navigator: Defaults to today, allows past and future dates easily -->
+    <div class="date-navigator-wrap flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-base">calendar_today</span>
+        <input type="date" 
+               [(ngModel)]="selectedDate" 
+               (change)="onDateChange()" 
+               class="input-date-clean font-semibold" 
+               title="Seleccionar fecha (actual, pasada o futura)" />
+        <span class="badge badge--today text-xs" *ngIf="isTodaySelected">Hoy</span>
+        <span class="badge badge--tomorrow text-xs" *ngIf="isTomorrowSelected">Mañana</span>
+        <button *ngIf="!isTodaySelected" (click)="setToday()" class="btn-today-link" title="Volver a la fecha actual">
+          Ir a hoy
+        </button>
+      </div>
+
+      <div class="text-caption text-muted font-medium">
+        <strong>{{ filteredOrders.length }}</strong> pedidos • Total: <strong class="text-primary">{{ formatCurrency(totalDayAmount) }}</strong>
+      </div>
+    </div>
+
+    <!-- Status Filter Chips -->
     <div class="filter-chips">
       <button class="chip" [class.active]="activeFilter === 'all'" (click)="setFilter('all')">Todos</button>
       <button class="chip chip--pending" [class.active]="activeFilter === 'pending'" (click)="setFilter('pending')">Pendientes</button>
@@ -27,12 +60,24 @@
     </div>
   </section>
 
-  <!-- Orders Content Card -->
+  <!-- Orders Content Card for Selected Day -->
   <section class="section-card">
+    <div class="flex items-center justify-between pb-3 mb-3 border-b border-outline-variant/25">
+      <div class="flex items-center gap-2">
+        <div class="p-1.5 bg-primary/10 rounded text-primary flex items-center justify-center">
+          <span class="material-symbols-outlined text-base">event</span>
+        </div>
+        <h3 class="font-bold text-body-md text-primary">{{ formattedSelectedDate }}</h3>
+      </div>
+      <div class="text-caption text-muted">
+        <span>Mostrando pedidos de este día</span>
+      </div>
+    </div>
+
     <div class="order-list">
-      <div *ngIf="filteredOrders.length === 0" class="empty-state">
-        <span class="material-symbols-outlined empty-icon">search_off</span>
-        <p class="text-muted">No se encontraron pedidos con los filtros aplicados.</p>
+      <div *ngIf="filteredOrders.length === 0" class="empty-state py-8">
+        <span class="material-symbols-outlined empty-icon">event_busy</span>
+        <p class="text-muted font-medium">No hay pedidos registrados para esta fecha.</p>
       </div>
 
       <div *ngFor="let order of filteredOrders" (click)="showOrderDetail(order)" class="order-item">
@@ -180,4 +225,46 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal Confirmar Mover al Día Siguiente -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showMoveModal">
+    <div class="modal-backdrop-overlay" (click)="cancelMoveModal()"></div>
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">update</span>
+          Mover Pedidos al Día Siguiente
+        </h3>
+        <button class="modal-close-btn" (click)="cancelMoveModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-3">
+        <p class="text-body-md text-primary font-medium">
+          ¿Deseas mover <strong>{{ unfulfilledCount }}</strong> pedidos no completados al día siguiente?
+        </p>
+        <p class="text-body-sm text-muted">
+          Los pedidos cargados, pendientes y fallados de hoy se reprogramarán para la siguiente jornada con estado <strong>Pendiente</strong>, listos para salir a ruta.
+        </p>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="cancelMoveModal()" [disabled]="isMovingOrders">Cancelar</button>
+        <button class="btn btn--primary flex-1 flex items-center justify-center gap-2" (click)="confirmMoveOrders()" [disabled]="isMovingOrders">
+          <span class="material-symbols-outlined" *ngIf="!isMovingOrders">check_circle</span>
+          <span>{{ isMovingOrders ? 'Moviendo...' : 'Confirmar traslado' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Feedback -->
+  <app-feedback-modal
+    [open]="showFeedbackModal"
+    [title]="feedbackTitle"
+    [message]="feedbackMessage"
+    [tone]="feedbackTone"
+    (closed)="closeFeedbackModal()">
+  </app-feedback-modal>
 </div>

@@ -157,9 +157,17 @@
       </section>
 
       <!-- Day Close Action -->
-      <section class="close-day-section pt-6 border-t" *ngIf="!isTodayClosed">
-        <button class="btn btn--primary btn--full py-4 text-body-md" (click)="closeDay()">
-          <span class="material-symbols-outlined">lock</span> Realizar Cierre de Jornada (Reiniciar)
+      <section class="close-day-section pt-6 border-t flex flex-col sm:flex-row gap-4" *ngIf="!isTodayClosed">
+        <button class="btn btn--outline flex-1 py-4 text-body-md flex items-center justify-center gap-2" 
+                (click)="openMoveModal()"
+                [disabled]="pendingCount + failedCount === 0"
+                title="Mover pedidos no completados al día siguiente">
+          <span class="material-symbols-outlined">update</span>
+          <span>Mover no completados al día siguiente ({{ pendingCount + failedCount }})</span>
+        </button>
+        <button class="btn btn--primary flex-1 py-4 text-body-md flex items-center justify-center gap-2" (click)="closeDay()">
+          <span class="material-symbols-outlined">lock</span>
+          <span>Realizar Cierre de Jornada (Reiniciar)</span>
         </button>
       </section>
 
@@ -528,12 +536,51 @@
         <p class="text-body-sm text-muted">
           Esto consolidará las ventas del día y registrará los cierres de caja correspondientes en el sistema.
         </p>
+        <div class="p-3 bg-primary/5 border border-primary/20 rounded-lg text-body-sm text-primary flex items-start gap-2" *ngIf="pendingCount > 0 || failedCount > 0">
+          <span class="material-symbols-outlined text-base mt-0.5">info</span>
+          <span>
+            Hay <strong>{{ pendingCount + failedCount }}</strong> pedido(s) no entregados (cargados, pendientes o fallados) que se moverán automáticamente al día siguiente con estado <strong>Pendiente</strong>.
+          </span>
+        </div>
       </div>
 
       <div class="modal-footer mt-6 flex gap-4">
         <button class="btn btn--outline flex-1" (click)="cancelCloseDay()">Cancelar</button>
         <button class="btn btn--primary flex-1" (click)="confirmCloseDay()">
           <span class="material-symbols-outlined">lock</span> Confirmar cierre
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Mover al Día Siguiente desde Reporte -->
+  <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showMoveModal">
+    <div class="modal-backdrop-overlay" (click)="cancelMoveModal()"></div>
+    <div class="modal-card animate-slide-up">
+      <div class="modal-header mb-4">
+        <h3 class="text-headline-md font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">update</span>
+          Mover Pedidos al Día Siguiente
+        </h3>
+        <button class="modal-close-btn" (click)="cancelMoveModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body space-y-3">
+        <p class="text-body-md text-primary font-medium">
+          ¿Deseas mover los pedidos pendientes, cargados y fallados al día siguiente?
+        </p>
+        <p class="text-body-sm text-muted">
+          Se reprogramarán <strong>{{ pendingCount + failedCount }}</strong> pedido(s) para la siguiente jornada con estado <strong>Pendiente</strong> listos para salir a ruta.
+        </p>
+      </div>
+
+      <div class="modal-footer mt-6 flex gap-4">
+        <button class="btn btn--outline flex-1" (click)="cancelMoveModal()" [disabled]="isMovingOrders">Cancelar</button>
+        <button class="btn btn--primary flex-1 flex items-center justify-center gap-2" (click)="confirmMoveOrders()" [disabled]="isMovingOrders">
+          <span class="material-symbols-outlined" *ngIf="!isMovingOrders">check_circle</span>
+          <span>{{ isMovingOrders ? 'Moviendo...' : 'Confirmar traslado' }}</span>
         </button>
       </div>
     </div>
