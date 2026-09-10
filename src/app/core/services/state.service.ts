@@ -198,6 +198,7 @@ export class StateService {
       code: db.codigo || db.id,
       clientId: db.cliente_id,
       clientName: db.cliente?.nombre || 'Cliente Desconocido',
+      clientPhone: db.cliente?.telefono || this.clientsSubject.value.find(c => c.id === db.cliente_id)?.phone || undefined,
       clientLocationUrl: db.cliente?.ubicacion_url || (db.cliente?.direccion ? `https://maps.google.com/?q=${encodeURIComponent(db.cliente.direccion)}` : undefined),
       vendorId: db.vendedor_id,
       vendorName: db.vendedor?.nombre || null,
@@ -213,6 +214,10 @@ export class StateService {
         price: Number(d.precio_aplicado)
       }))
     };
+  }
+
+  public getClientById(id: string): Client | undefined {
+    return this.clientsSubject.value.find(c => c.id === id);
   }
 
 
@@ -325,6 +330,21 @@ export class StateService {
   }
 
   updateOrderStatus(orderId: string, status: OrderStatus, extra?: { failedReason?: string }): void {
+    // Actualización optimista local para respuesta visual instantánea
+    const currentOrders = this.ordersSubject.value;
+    const orderIndex = currentOrders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+      const updatedList = [...currentOrders];
+      const target = updatedList[orderIndex];
+      updatedList[orderIndex] = {
+        ...target,
+        status,
+        failedReason: extra?.failedReason !== undefined ? extra.failedReason : (status === 'delivered' ? undefined : target.failedReason),
+        deliveredAt: status === 'delivered' ? (target.deliveredAt || new Date().toISOString()) : (status === 'route' || status === 'loaded' ? null : target.deliveredAt)
+      };
+      this.ordersSubject.next(updatedList);
+    }
+
     const body = {
       estado: status,
       motivo_falla: extra?.failedReason || undefined
@@ -334,7 +354,10 @@ export class StateService {
         this.loadOrders();
         this.loadProducts();
       },
-      error: (err) => console.error('Error updating order status', err)
+      error: (err) => {
+        console.error('Error updating order status', err);
+        this.loadOrders();
+      }
     });
   }
 

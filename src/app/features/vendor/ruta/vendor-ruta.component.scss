@@ -76,6 +76,33 @@
         text-overflow: ellipsis;
       }
     }
+
+    .right-total {
+      @include flex(row, flex-end, center, $space-2);
+    }
+
+    .btn-call-quick {
+      width: 32px;
+      height: 32px;
+      border-radius: $radius-full;
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+      border: 1px solid rgba($color-primary, 0.25);
+      @include flex-center();
+      cursor: pointer;
+      transition: all $transition-fast;
+      flex-shrink: 0;
+
+      &:hover {
+        background: $color-primary;
+        color: white;
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
   }
 
   .state-dot {

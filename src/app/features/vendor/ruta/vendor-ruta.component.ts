@@ -49,8 +49,56 @@ export class VendorRutaComponent implements OnInit {
     this.stateService.todayOrders$.pipe(
       map(orders => orders.filter(o => o.vendorId === this.activeVendor?.id))
     ).subscribe(orders => {
-      this.vendorOrders = orders;
+      this.vendorOrders = this.sortOrders(orders);
       this.calculateProgress();
+    });
+  }
+
+  trackByOrderId(_index: number, order: Order): string {
+    return order.id;
+  }
+
+  /**
+   * Ordena los pedidos para que los entregados pasen automáticamente abajo.
+   * Prioridad:
+   * 1. route (entrega activa en curso)
+   * 2. loaded (cargado en vehículo)
+   * 3. pending (pendiente de carga)
+   * 4. failed (falla registrada)
+   * 5. delivered (entregado - al fondo)
+   */
+  private sortOrders(orders: Order[]): Order[] {
+    const statusPriority: Record<OrderStatus, number> = {
+      route: 0,
+      loaded: 1,
+      pending: 2,
+      failed: 3,
+      delivered: 4
+    };
+
+    return [...orders].sort((a, b) => {
+      const pA = statusPriority[a.status] ?? 99;
+      const pB = statusPriority[b.status] ?? 99;
+
+      if (pA !== pB) {
+        return pA - pB;
+      }
+
+      // Si ambos están entregados, mantener el orden en que se entregaron
+      if (a.status === 'delivered' && b.status === 'delivered') {
+        const timeA = a.deliveredAt ? new Date(a.deliveredAt).getTime() : new Date(a.createdAt).getTime();
+        const timeB = b.deliveredAt ? new Date(b.deliveredAt).getTime() : new Date(b.createdAt).getTime();
+        return timeA - timeB;
+      }
+
+      // Para los demás estados, preservar orden secuencial de ruta
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+
+      return (a.code || a.id).localeCompare(b.code || b.id);
     });
   }
 
@@ -92,6 +140,7 @@ export class VendorRutaComponent implements OnInit {
   }
 
   markDelivered(orderId: string) {
+    this.expandedOrderIds.delete(orderId);
     this.stateService.updateOrderStatus(orderId, 'delivered');
   }
 
@@ -108,6 +157,7 @@ export class VendorRutaComponent implements OnInit {
 
   submitFalla() {
     if (!this.failingOrder) return;
+    this.expandedOrderIds.delete(this.failingOrder.id);
     this.stateService.updateOrderStatus(this.failingOrder.id, 'failed', { failedReason: this.failReason });
     this.closeFailModal();
   }
@@ -115,5 +165,22 @@ export class VendorRutaComponent implements OnInit {
   openMap(order: Order) {
     const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(order.clientName)}`;
     window.open(url, '_blank');
+  }
+
+  callClient(order: Order, event?: Event) {
+    event?.stopPropagation();
+    const phone = this.getClientPhone(order);
+    if (!phone) {
+      alert('El cliente no tiene un teléfono registrado.');
+      return;
+    }
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    window.location.href = `tel:${cleanPhone}`;
+  }
+
+  getClientPhone(order: Order): string {
+    if (order.clientPhone) return order.clientPhone;
+    const client = this.stateService.getClientById(order.clientId);
+    return client?.phone || '';
   }
 }
