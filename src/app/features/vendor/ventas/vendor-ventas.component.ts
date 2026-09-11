@@ -46,6 +46,7 @@ export class VendorVentasComponent implements OnInit {
   selectedProductId = '';
   productQuantity = 1;
   productPrice = 0;
+  selectedPaymentMethod: 'efectivo' | 'qr' = 'efectivo';
   saleItems: { product: Product; quantity: number; price: number }[] = [];
 
   showFeedbackModal = false;
@@ -226,6 +227,7 @@ export class VendorVentasComponent implements OnInit {
       clientId: this.selectedClientId,
       vendorId: this.activeVendor.id,
       status: status,
+      paymentMethod: status === 'delivered' ? this.selectedPaymentMethod : undefined,
       items: this.saleItems.map(item => ({
         productId: item.product.id,
         quantity: item.quantity,
@@ -236,7 +238,9 @@ export class VendorVentasComponent implements OnInit {
     this.stateService.createOrder(orderData);
     const isVenta = status === 'delivered';
     const messageTitle = isVenta ? 'Venta registrada' : 'Pedido registrado';
-    const messageContent = isVenta ? 'Venta directa registrada con éxito.' : 'Pedido directo registrado con éxito como pendiente.';
+    const messageContent = isVenta 
+      ? `Venta directa registrada con éxito (${this.selectedPaymentMethod === 'qr' ? 'Pago QR' : 'Pago Efectivo'}).` 
+      : 'Pedido directo registrado con éxito como pendiente.';
 
     this.openFeedbackModal(messageTitle, messageContent, 'success', () => {
       this.selectedClientId = '';
@@ -244,6 +248,7 @@ export class VendorVentasComponent implements OnInit {
       this.selectedProductId = '';
       this.productQuantity = 1;
       this.productPrice = 0;
+      this.selectedPaymentMethod = 'efectivo';
       this.saleItems = [];
       this.filterClients();
     });

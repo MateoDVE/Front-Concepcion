@@ -12,12 +12,25 @@
 
   <div class="report-content space-y-6">
     <!-- Collected Monies Card -->
+    <!-- Collected Monies Card -->
     <section class="cash-card relative overflow-hidden rounded-lg p-6 bg-secondary text-on-secondary shadow-lg">
       <div class="bg-blur-accent"></div>
       <div class="relative z-10 space-y-4">
         <div>
-          <p class="text-caption uppercase tracking-wider opacity-85 mb-1">Efectivo a Rendir</p>
-          <h2 class="text-[36px] font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
+          <p class="text-caption uppercase tracking-wider opacity-85 mb-1">Efectivo Físico a Rendir</p>
+          <h2 class="text-[36px] font-extrabold leading-none text-white">{{ formatCurrency(totalCashCollected) }}</h2>
+        </div>
+
+        <!-- Breakdown Cash vs QR -->
+        <div class="payment-reconciliation-bar p-3 bg-white/10 rounded-lg flex justify-between items-center text-body-sm">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">payments</span>
+            <span>Efectivo: <strong>{{ formatCurrency(totalCashCollected) }}</strong></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">qr_code_2</span>
+            <span>QR: <strong>{{ formatCurrency(totalQrCollected) }}</strong></span>
+          </div>
         </div>
 
         <div class="progress-bar-wrap">
@@ -32,8 +45,8 @@
 
         <div class="metrics-summary-grid flex justify-between items-center pt-2">
           <div>
-            <span class="text-caption opacity-85 block">Paradas</span>
-            <span class="font-bold text-body-lg text-white">{{ totalStops }}</span>
+            <span class="text-caption opacity-85 block">Total Ventas</span>
+            <span class="font-bold text-body-md text-white">{{ formatCurrency(totalCollected) }}</span>
           </div>
           <div class="divider"></div>
           <div>
@@ -49,9 +62,12 @@
       </div>
     </section>
 
-    <!-- Cash Breakdown List -->
+    <!-- Delivered Orders Breakdown List -->
     <section class="section-card">
-      <h3 class="text-headline-md font-semibold text-primary mb-4">Entregas que rinden efectivo</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-headline-md font-semibold text-primary">Detalle de Cobros Realizados</h3>
+        <span class="text-caption text-muted font-medium">{{ deliveredCount }} entregas</span>
+      </div>
       
       <div *ngIf="deliveredCount === 0" class="empty-state">
         <span class="material-symbols-outlined empty-icon">payments</span>
@@ -60,11 +76,20 @@
 
       <div class="cash-list space-y-2" *ngIf="deliveredCount > 0">
         <div *ngFor="let order of vendorOrders" class="cash-item p-3 border rounded-lg flex justify-between items-center" [class.hidden]="order.status !== 'delivered'">
-          <div>
-            <span class="text-body-sm font-bold block">{{ order.clientName }}</span>
-            <span class="text-caption text-muted">{{ order.code }}</span>
+          <div class="flex items-center gap-2.5">
+            <span class="state-dot delivered"></span>
+            <div>
+              <span class="text-body-sm font-bold block">{{ order.clientName }}</span>
+              <span class="text-caption text-muted">{{ order.code }}</span>
+            </div>
           </div>
-          <span class="text-body-sm font-bold text-secondary">{{ formatCurrency(order.total) }}</span>
+          <div class="flex items-center gap-2.5">
+            <span class="badge text-xs flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
+              <span class="material-symbols-outlined text-[12px]">{{ order.paymentMethod === 'qr' ? 'qr_code_2' : 'payments' }}</span>
+              {{ order.paymentMethod === 'qr' ? 'QR' : 'Efectivo' }}
+            </span>
+            <span class="text-body-sm font-bold text-primary">{{ formatCurrency(order.total) }}</span>
+          </div>
         </div>
       </div>
     </section>

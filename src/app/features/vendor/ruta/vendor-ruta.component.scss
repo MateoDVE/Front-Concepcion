@@ -208,6 +208,75 @@
   }
 }
 
+// Payment Option Selection Cards
+.payment-option-card {
+  position: relative;
+  border: 2px solid rgba($color-outline-variant, 0.35);
+  background: $color-surface-container-low;
+  border-radius: $radius-md;
+  padding: $space-3 $space-2;
+  text-align: center;
+  cursor: pointer;
+  transition: all $transition-fast;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: rgba($color-primary, 0.4);
+    background: $color-surface-container;
+    transform: translateY(-2px);
+  }
+
+  &--selected {
+    border-color: $color-primary;
+    background: rgba($color-primary, 0.05);
+    box-shadow: 0 0 0 1px $color-primary;
+  }
+
+  .payment-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-full;
+    background: $color-surface-container;
+    color: $color-outline;
+    @include flex-center();
+    transition: all $transition-fast;
+
+    &--cash {
+      background: rgba($color-secondary, 0.15);
+      color: $color-secondary;
+    }
+
+    &--qr {
+      background: rgba($color-primary, 0.15);
+      color: $color-primary;
+    }
+  }
+
+  .payment-option-title {
+    color: $color-on-surface;
+    font-size: $text-body-md;
+  }
+
+  .payment-option-desc {
+    font-size: 11px;
+  }
+
+  .payment-check-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: $radius-full;
+    background: $color-primary;
+    color: white;
+    @include flex-center();
+  }
+}
+
 .border-t {
   border-top: 1px solid rgba($color-outline-variant, 0.25);
 }

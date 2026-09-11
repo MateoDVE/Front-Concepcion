@@ -429,6 +429,16 @@ input, select, textarea {
   &--route, &--active, &--loaded { @include badge(route); }
   &--delivered { @include badge(delivered); }
   &--failed, &--error { @include badge(failed); }
+  &--cash {
+    background-color: rgba($color-secondary, 0.12);
+    color: darken($color-secondary, 10%);
+    border: 1px solid rgba($color-secondary, 0.3);
+  }
+  &--qr {
+    background-color: rgba($color-primary, 0.12);
+    color: $color-primary;
+    border: 1px solid rgba($color-primary, 0.3);
+  }
 }
 
 // Buttons

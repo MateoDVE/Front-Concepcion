@@ -50,6 +50,8 @@ export class AdminReporteComponent implements OnInit {
   failedCount = 0;
   pendingCount = 0;
   totalCollected = 0;
+  todayCashTotal = 0;
+  todayQrTotal = 0;
   efficiencyRate = 0;
   failedOrders: Order[] = [];
   deliveredOrders: Order[] = [];
@@ -67,6 +69,8 @@ export class AdminReporteComponent implements OnInit {
   historyTotalSistema = 0;
   historyDifference = 0;
   historyEfficiencyRate = 0;
+  historyCashTotal = 0;
+  historyQrTotal = 0;
   historyFailedOrders: Order[] = [];
   historyDeliveredOrders: Order[] = [];
   historyProductSummaries: ProductSummary[] = [];
@@ -127,6 +131,14 @@ export class AdminReporteComponent implements OnInit {
     
     this.totalCollected = todayOrders
       .filter(o => o.status === 'delivered')
+      .reduce((sum, o) => sum + o.total, 0);
+
+    this.todayCashTotal = todayOrders
+      .filter(o => o.status === 'delivered' && (o.paymentMethod === 'efectivo' || !o.paymentMethod))
+      .reduce((sum, o) => sum + o.total, 0);
+
+    this.todayQrTotal = todayOrders
+      .filter(o => o.status === 'delivered' && o.paymentMethod === 'qr')
       .reduce((sum, o) => sum + o.total, 0);
 
     this.efficiencyRate = this.totalOrders > 0 
@@ -307,6 +319,19 @@ export class AdminReporteComponent implements OnInit {
     const histOrders = this.orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === this.historyDate);
     this.historyFailedOrders = histOrders.filter(o => o.status === 'failed');
     this.historyDeliveredOrders = histOrders.filter(o => o.status === 'delivered');
+
+    this.historyCashTotal = this.historyDeliveredOrders
+      .filter(o => o.paymentMethod === 'efectivo' || !o.paymentMethod)
+      .reduce((sum, o) => sum + o.total, 0);
+
+    this.historyQrTotal = this.historyDeliveredOrders
+      .filter(o => o.paymentMethod === 'qr')
+      .reduce((sum, o) => sum + o.total, 0);
+
+    if (this.historyDeliveredOrders.length === 0 && this.historyReportData && this.historyReportData.length > 0) {
+      this.historyCashTotal = this.historyReportData.reduce((sum, item) => sum + Number(item.total_efectivo || 0), 0);
+      this.historyQrTotal = this.historyReportData.reduce((sum, item) => sum + Number(item.total_qr || 0), 0);
+    }
 
     const salesMap = new Map<string, { quantity: number; revenue: number }>();
     histOrders

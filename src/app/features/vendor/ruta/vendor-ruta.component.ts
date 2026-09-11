@@ -28,6 +28,11 @@ export class VendorRutaComponent implements OnInit {
   failReason = 'Cliente Ausente';
   showFailModal = false;
 
+  // Selected Order for Delivery Modal (Payment Selection)
+  deliveringOrder: Order | null = null;
+  selectedPaymentMethod: 'efectivo' | 'qr' = 'efectivo';
+  showDeliverModal = false;
+
   // Track expanded cards
   expandedOrderIds = new Set<string>();
 
@@ -139,9 +144,39 @@ export class VendorRutaComponent implements OnInit {
     this.stateService.updateOrderStatus(orderId, 'route');
   }
 
+  openDeliverModal(order: Order, event?: Event) {
+    event?.stopPropagation();
+    this.deliveringOrder = order;
+    this.selectedPaymentMethod = 'efectivo';
+    this.showDeliverModal = true;
+  }
+
+  closeDeliverModal() {
+    this.showDeliverModal = false;
+    this.deliveringOrder = null;
+  }
+
+  selectPaymentMethod(method: 'efectivo' | 'qr') {
+    this.selectedPaymentMethod = method;
+  }
+
+  confirmDelivery() {
+    if (!this.deliveringOrder) return;
+    this.expandedOrderIds.delete(this.deliveringOrder.id);
+    this.stateService.updateOrderStatus(this.deliveringOrder.id, 'delivered', {
+      paymentMethod: this.selectedPaymentMethod
+    });
+    this.closeDeliverModal();
+  }
+
   markDelivered(orderId: string) {
-    this.expandedOrderIds.delete(orderId);
-    this.stateService.updateOrderStatus(orderId, 'delivered');
+    const order = this.vendorOrders.find(o => o.id === orderId);
+    if (order) {
+      this.openDeliverModal(order);
+    } else {
+      this.expandedOrderIds.delete(orderId);
+      this.stateService.updateOrderStatus(orderId, 'delivered', { paymentMethod: 'efectivo' });
+    }
   }
 
   openFailModal(order: Order) {

@@ -115,6 +115,29 @@
           <span class="font-bold text-headline-md text-primary">{{ formatCurrency(getSaleTotal()) }}</span>
         </div>
 
+        <!-- Payment Method Selector for Direct Sale -->
+        <div class="payment-method-selector-box p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 mb-4">
+          <label class="text-caption text-muted uppercase font-bold tracking-wider block mb-2">
+            Método de Pago
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" 
+                    class="payment-toggle-btn"
+                    [class.payment-toggle-btn--active]="selectedPaymentMethod === 'efectivo'"
+                    (click)="selectedPaymentMethod = 'efectivo'">
+              <span class="material-symbols-outlined text-lg">payments</span>
+              <span>Efectivo</span>
+            </button>
+            <button type="button" 
+                    class="payment-toggle-btn"
+                    [class.payment-toggle-btn--active]="selectedPaymentMethod === 'qr'"
+                    (click)="selectedPaymentMethod = 'qr'">
+              <span class="material-symbols-outlined text-lg">qr_code_2</span>
+              <span>QR / Transferencia</span>
+            </button>
+          </div>
+        </div>
+
         <div class="flex gap-4 w-full">
           <button class="btn btn--outline flex-1 py-4 flex items-center justify-center gap-2 shadow-sm font-bold text-body-md" (click)="submitDirectSale('pending')">
             <span class="material-symbols-outlined">assignment_late</span> Confirmar Pedido

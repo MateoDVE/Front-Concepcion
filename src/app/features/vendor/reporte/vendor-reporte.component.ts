@@ -24,6 +24,8 @@ export class VendorReporteComponent implements OnInit {
   deliveredCount = 0;
   failedCount = 0;
   totalCollected = 0;
+  totalCashCollected = 0;
+  totalQrCollected = 0;
   efficiencyRate = 0;
 
   ngOnInit() {
@@ -54,11 +56,16 @@ export class VendorReporteComponent implements OnInit {
 
   computeMetrics() {
     this.totalStops = this.vendorOrders.length;
-    this.deliveredCount = this.vendorOrders.filter(o => o.status === 'delivered').length;
+    const deliveredOrders = this.vendorOrders.filter(o => o.status === 'delivered');
+    this.deliveredCount = deliveredOrders.length;
     this.failedCount = this.vendorOrders.filter(o => o.status === 'failed').length;
     
-    this.totalCollected = this.vendorOrders
-      .filter(o => o.status === 'delivered')
+    this.totalCollected = deliveredOrders.reduce((sum, o) => sum + o.total, 0);
+    this.totalCashCollected = deliveredOrders
+      .filter(o => !o.paymentMethod || o.paymentMethod === 'efectivo')
+      .reduce((sum, o) => sum + o.total, 0);
+    this.totalQrCollected = deliveredOrders
+      .filter(o => o.paymentMethod === 'qr')
       .reduce((sum, o) => sum + o.total, 0);
 
     this.efficiencyRate = this.totalStops > 0
