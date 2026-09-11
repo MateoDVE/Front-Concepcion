@@ -37,6 +37,18 @@
           <div>
             <p class="text-caption uppercase tracking-wider opacity-80 mb-1">Ventas Consolidadas (Entregado)</p>
             <h2 class="text-[40px] font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
+            <div class="flex flex-wrap gap-4 mt-3 pt-2.5 border-t border-white/20">
+              <div class="flex items-center gap-1.5 text-white/95">
+                <span class="material-symbols-outlined text-base">payments</span>
+                <span class="text-caption font-medium">Efectivo:</span>
+                <span class="text-body-sm font-bold text-white">{{ formatCurrency(todayCashTotal) }}</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-white/95">
+                <span class="material-symbols-outlined text-base">qr_code_2</span>
+                <span class="text-caption font-medium">QR:</span>
+                <span class="text-body-sm font-bold text-white">{{ formatCurrency(todayQrTotal) }}</span>
+              </div>
+            </div>
           </div>
 
           <div class="progress-bar-wrap">
@@ -138,9 +150,15 @@
                 <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
                 <span class="text-caption text-muted block">{{ order.code }} • {{ order.vendorName || 'Sin asignar' }}</span>
               </div>
-              <div class="text-right">
+              <div class="text-right flex flex-col items-end gap-1">
                 <span class="font-bold text-body-md text-success">{{ formatCurrency(order.total) }}</span>
-                <span class="badge badge--success block mt-1 text-[10px]">Entregado</span>
+                <div class="flex items-center gap-1">
+                  <span class="badge text-[10px] flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
+                    <span class="material-symbols-outlined text-[12px]">{{ order.paymentMethod === 'qr' ? 'qr_code_2' : 'payments' }}</span>
+                    {{ order.paymentMethod === 'qr' ? 'QR' : 'Efectivo' }}
+                  </span>
+                  <span class="badge badge--success text-[10px]">Entregado</span>
+                </div>
               </div>
             </div>
             <!-- Product details -->
@@ -261,6 +279,35 @@
             </div>
           </div>
 
+          <!-- Payment Method Summary (Cash vs QR) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="section-card p-4 flex items-center justify-between border-l-4 border-l-secondary">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-secondary/10 rounded-lg text-secondary">
+                  <span class="material-symbols-outlined text-2xl">payments</span>
+                </div>
+                <div>
+                  <span class="text-caption text-muted uppercase tracking-wider block font-medium">Cobrado en Efectivo</span>
+                  <h4 class="text-headline-md font-extrabold text-secondary">{{ formatCurrency(historyCashTotal) }}</h4>
+                </div>
+              </div>
+              <span class="badge badge--cash text-xs">Efectivo</span>
+            </div>
+
+            <div class="section-card p-4 flex items-center justify-between border-l-4 border-l-primary">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-primary/10 rounded-lg text-primary">
+                  <span class="material-symbols-outlined text-2xl">qr_code_2</span>
+                </div>
+                <div>
+                  <span class="text-caption text-muted uppercase tracking-wider block font-medium">Cobrado en QR</span>
+                  <h4 class="text-headline-md font-extrabold text-primary">{{ formatCurrency(historyQrTotal) }}</h4>
+                </div>
+              </div>
+              <span class="badge badge--qr text-xs">QR</span>
+            </div>
+          </div>
+
           <!-- Breakdown by Vendor -->
           <section class="section-card">
             <h3 class="text-headline-md font-semibold text-primary mb-4">Desglose Operativo por Vendedor</h3>
@@ -273,6 +320,8 @@
                     <th class="text-center text-caption uppercase text-muted">Asignados</th>
                     <th class="text-center text-caption uppercase text-muted">Entregados / Fallidos</th>
                     <th class="text-center text-caption uppercase text-muted">En Ruta / Pend.</th>
+                    <th class="text-right text-caption uppercase text-muted">Efectivo</th>
+                    <th class="text-right text-caption uppercase text-muted">QR</th>
                     <th class="text-right text-caption uppercase text-muted">Sistema</th>
                     <th class="text-right text-caption uppercase text-muted">Recaudado</th>
                     <th class="text-right text-caption uppercase text-muted">Diferencia</th>
@@ -290,7 +339,9 @@
                     <td class="text-center text-body-sm text-muted">
                       {{ (item.en_ruta || 0) + (item.pendientes || 0) }}
                     </td>
-                    <td class="text-right text-body-sm font-semibold text-primary">{{ formatCurrency(toNumber(item.total_sistema_entregado)) }}</td>
+                    <td class="text-right text-body-sm font-semibold text-secondary">{{ formatCurrency(toNumber(item.total_efectivo)) }}</td>
+                    <td class="text-right text-body-sm font-semibold text-primary">{{ formatCurrency(toNumber(item.total_qr)) }}</td>
+                    <td class="text-right text-body-sm font-semibold">{{ formatCurrency(toNumber(item.total_sistema_entregado)) }}</td>
                     <td class="text-right text-body-sm font-semibold text-success">{{ formatCurrency(toNumber(item.total_recaudado)) }}</td>
                     <td class="text-right text-body-sm font-bold"
                         [class.text-success]="toNumber(item.diferencia) === 0"
@@ -322,9 +373,15 @@
                     <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
                     <span class="text-caption text-muted block">{{ order.code }} • {{ order.vendorName || 'Sin asignar' }}</span>
                   </div>
-                  <div class="text-right">
+                  <div class="text-right flex flex-col items-end gap-1">
                     <span class="font-bold text-body-md text-success">{{ formatCurrency(order.total) }}</span>
-                    <span class="badge badge--success block mt-1 text-[10px]">Entregado</span>
+                    <div class="flex items-center gap-1">
+                      <span class="badge text-[10px] flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
+                        <span class="material-symbols-outlined text-[12px]">{{ order.paymentMethod === 'qr' ? 'qr_code_2' : 'payments' }}</span>
+                        {{ order.paymentMethod === 'qr' ? 'QR' : 'Efectivo' }}
+                      </span>
+                      <span class="badge badge--success text-[10px]">Entregado</span>
+                    </div>
                   </div>
                 </div>
                 <!-- Product details -->

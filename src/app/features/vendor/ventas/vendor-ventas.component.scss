@@ -243,3 +243,31 @@
   }
 }
 
+.payment-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  padding: $space-3 $space-2;
+  border-radius: $radius-default;
+  border: 1.5px solid rgba($color-outline-variant, 0.4);
+  background: $color-surface-container-lowest;
+  color: $color-on-surface;
+  font-weight: 600;
+  font-size: $text-body-sm;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    border-color: rgba($color-primary, 0.4);
+    background: $color-surface-container;
+  }
+
+  &--active {
+    border-color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    color: $color-primary;
+    box-shadow: 0 0 0 1px $color-primary;
+  }
+}
+

@@ -35,6 +35,7 @@ export interface OrderItem {
 }
 
 export type OrderStatus = 'pending' | 'loaded' | 'route' | 'delivered' | 'failed';
+export type PaymentMethod = 'efectivo' | 'qr';
 
 export interface Order {
   id: string;
@@ -48,6 +49,7 @@ export interface Order {
   status: OrderStatus;
   createdAt: string; // ISO string or timestamp
   deliveredAt: string | null;
+  paymentMethod?: PaymentMethod | null;
   items: OrderItem[];
   total: number;
   failedReason?: string; // Reason why delivery failed

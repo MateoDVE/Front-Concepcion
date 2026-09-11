@@ -36,8 +36,12 @@
             </span>
           </div>
         </div>
-        <div class="right-total text-right">
+        <div class="right-total text-right flex flex-col items-end gap-1">
           <span class="total-amount font-bold text-body-md text-primary">{{ formatCurrency(order.total) }}</span>
+          <span *ngIf="order.status === 'delivered'" class="badge text-xs flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
+            <span class="material-symbols-outlined text-[12px]">{{ order.paymentMethod === 'qr' ? 'qr_code_2' : 'payments' }}</span>
+            {{ order.paymentMethod === 'qr' ? 'QR' : 'Efectivo' }}
+          </span>
         </div>
       </div>
       

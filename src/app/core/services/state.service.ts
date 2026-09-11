@@ -205,6 +205,7 @@ export class StateService {
       status: db.estado as OrderStatus,
       createdAt: db.fecha_creacion || db.created_at,
       deliveredAt: db.fecha_entrega || null,
+      paymentMethod: (db.metodo_pago as any) || null,
       total: Number(db.total),
       failedReason: db.motivo_falla || undefined,
       items: (db.detalles || []).map((d: any) => ({
@@ -310,10 +311,11 @@ export class StateService {
   }
 
   createOrder(orderData: any): void {
-    const body = {
+    const body: any = {
       cliente_id: orderData.clientId,
       vendedor_id: orderData.vendorId || undefined,
       estado: orderData.status || undefined,
+      metodo_pago: orderData.paymentMethod || undefined,
       detalles: orderData.items.map((item: any) => ({
         producto_id: item.productId,
         cantidad: item.quantity,
@@ -329,7 +331,11 @@ export class StateService {
     });
   }
 
-  updateOrderStatus(orderId: string, status: OrderStatus, extra?: { failedReason?: string }): void {
+  updateOrderStatus(
+    orderId: string, 
+    status: OrderStatus, 
+    extra?: { failedReason?: string; paymentMethod?: 'efectivo' | 'qr' }
+  ): void {
     // Actualización optimista local para respuesta visual instantánea
     const currentOrders = this.ordersSubject.value;
     const orderIndex = currentOrders.findIndex(o => o.id === orderId);
@@ -340,14 +346,16 @@ export class StateService {
         ...target,
         status,
         failedReason: extra?.failedReason !== undefined ? extra.failedReason : (status === 'delivered' ? undefined : target.failedReason),
-        deliveredAt: status === 'delivered' ? (target.deliveredAt || new Date().toISOString()) : (status === 'route' || status === 'loaded' ? null : target.deliveredAt)
+        deliveredAt: status === 'delivered' ? (target.deliveredAt || new Date().toISOString()) : (status === 'route' || status === 'loaded' ? null : target.deliveredAt),
+        paymentMethod: status === 'delivered' ? (extra?.paymentMethod || target.paymentMethod || 'efectivo') : null
       };
       this.ordersSubject.next(updatedList);
     }
 
-    const body = {
+    const body: any = {
       estado: status,
-      motivo_falla: extra?.failedReason || undefined
+      motivo_falla: extra?.failedReason || undefined,
+      metodo_pago: status === 'delivered' ? (extra?.paymentMethod || 'efectivo') : null
     };
     this.http.patch<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}/status`, body).subscribe({
       next: () => {
@@ -362,10 +370,11 @@ export class StateService {
   }
 
   updateOrder(updatedOrder: Order): void {
-    const body = {
+    const body: any = {
       cliente_id: updatedOrder.clientId,
       vendedor_id: updatedOrder.vendorId || null,
       estado: updatedOrder.status,
+      metodo_pago: updatedOrder.paymentMethod || null,
       detalles: updatedOrder.items.map(item => ({
         producto_id: item.productId,
         cantidad: item.quantity,
