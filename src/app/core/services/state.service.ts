@@ -415,21 +415,29 @@ export class StateService {
     // Perform daily closures on the backend for each vendor that has orders today
     const orders = this.ordersSubject.value;
     const vendors = this.vendorsSubject.value;
+    const todayStr = this.getLocalDateString();
 
     const closures: Observable<any>[] = [];
 
     vendors.forEach(vendor => {
-      const vendorOrders = orders.filter(o => o.vendorId === vendor.id);
+      const vendorOrders = orders.filter(
+        o => o.vendorId === vendor.id && this.getLocalDateString(new Date(o.createdAt)) === todayStr
+      );
       if (vendorOrders.length > 0) {
         const total_pedidos = vendorOrders.length;
         const entregados = vendorOrders.filter(o => o.status === 'delivered').length;
         const fallidos = vendorOrders.filter(o => o.status === 'failed').length;
-        const total_sistema = vendorOrders.reduce((sum, o) => sum + o.total, 0);
-        const total_recaudado = vendorOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0);
-        const diferencia = total_recaudado - total_sistema;
+        const total_sistema = Number(
+          vendorOrders
+            .filter(o => o.status === 'delivered')
+            .reduce((sum, o) => sum + o.total, 0)
+            .toFixed(2)
+        );
+        const total_recaudado = total_sistema;
+        const diferencia = 0.0;
 
         const body = {
-          fecha: this.getLocalDateString(),
+          fecha: todayStr,
           vendedor_id: vendor.id,
           total_pedidos,
           entregados,
