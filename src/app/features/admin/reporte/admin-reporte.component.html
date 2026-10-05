@@ -1,29 +1,29 @@
 <div class="container animate-fade-in pb-12">
   <!-- Page Header -->
   <div class="page-header mb-6">
-    <h2 class="text-headline-xl text-primary font-bold">Cierre y Reportes</h2>
-    <p class="text-muted text-body-md">Visualiza y audita balances de ventas, efectividad e incidencias operativas.</p>
+    <h2 class="text-headline-lg sm:text-headline-xl text-primary font-bold">Cierre y Reportes</h2>
+    <p class="text-muted text-body-sm sm:text-body-md">Visualiza y audita balances de ventas, efectividad e incidencias operativas.</p>
   </div>
 
   <!-- Navigation Tabs -->
-  <div class="tabs-container mb-6 flex border-b border-outline">
-    <button class="tab-button flex items-center gap-2 py-3 px-6 font-semibold text-body-md border-b-2"
+  <div class="tabs-container mb-6 border-b border-outline">
+    <button class="tab-button font-semibold border-b-2"
             [class.active]="activeTab === 'today'"
             (click)="selectTab('today')">
       <span class="material-symbols-outlined">today</span>
-      Jornada de Hoy
+      <span>Jornada de Hoy</span>
     </button>
-    <button class="tab-button flex items-center gap-2 py-3 px-6 font-semibold text-body-md border-b-2"
+    <button class="tab-button font-semibold border-b-2"
             [class.active]="activeTab === 'history'"
             (click)="selectTab('history')">
       <span class="material-symbols-outlined">history</span>
-      Historial por Día
+      <span>Historial por Día</span>
     </button>
-    <button class="tab-button flex items-center gap-2 py-3 px-6 font-semibold text-body-md border-b-2"
+    <button class="tab-button font-semibold border-b-2"
             [class.active]="activeTab === 'monthly'"
             (click)="selectTab('monthly')">
       <span class="material-symbols-outlined">monitoring</span>
-      Reporte Mensual
+      <span>Reporte Mensual</span>
     </button>
   </div>
 
@@ -31,13 +31,13 @@
     <!-- ==================== TAB 1: JORNADA DE HOY ==================== -->
     <div *ngIf="activeTab === 'today'" class="report-container space-y-6 animate-fade-in">
       <!-- Financial & Efficiency Highlight Card -->
-      <section class="efficiency-card relative overflow-hidden rounded-lg p-6 bg-primary-container text-on-primary-container shadow-lg">
+      <section class="efficiency-card relative overflow-hidden rounded-lg p-4 sm:p-6 bg-primary-container text-on-primary-container shadow-lg">
         <div class="bg-blur-accent"></div>
         <div class="relative z-10 space-y-4">
           <div>
             <p class="text-caption uppercase tracking-wider opacity-80 mb-1">Ventas Consolidadas (Entregado)</p>
-            <h2 class="text-[40px] font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
-            <div class="flex flex-wrap gap-4 mt-3 pt-2.5 border-t border-white/20">
+            <h2 class="hero-amount font-extrabold leading-none text-white">{{ formatCurrency(totalCollected) }}</h2>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 mt-3 pt-2.5 border-t border-white/20">
               <div class="flex items-center gap-1.5 text-white/95">
                 <span class="material-symbols-outlined text-base">payments</span>
                 <span class="text-caption font-medium">Efectivo:</span>
@@ -61,20 +61,20 @@
             </div>
           </div>
 
-          <div class="metrics-summary-grid flex justify-between items-center pt-2">
-            <div>
+          <div class="metrics-summary-grid pt-2">
+            <div class="metric-col">
               <span class="text-caption opacity-85 block">Entregados</span>
-              <span class="font-bold text-body-lg text-white">{{ deliveredCount }}</span>
+              <span class="font-bold text-body-md sm:text-body-lg text-white">{{ deliveredCount }}</span>
             </div>
             <div class="divider"></div>
-            <div>
+            <div class="metric-col">
               <span class="text-caption opacity-85 block">Fallidos</span>
-              <span class="font-bold text-body-lg text-white">{{ failedCount }}</span>
+              <span class="font-bold text-body-md sm:text-body-lg text-white">{{ failedCount }}</span>
             </div>
             <div class="divider"></div>
-            <div>
-              <span class="text-caption opacity-85 block">Pendientes/En Ruta</span>
-              <span class="font-bold text-body-lg text-white">{{ pendingCount }}</span>
+            <div class="metric-col">
+              <span class="text-caption opacity-85 block">Pend./Ruta</span>
+              <span class="font-bold text-body-md sm:text-body-lg text-white">{{ pendingCount }}</span>
             </div>
           </div>
         </div>
@@ -119,15 +119,15 @@
         </div>
 
         <div class="failed-list space-y-3" *ngIf="failedOrders.length > 0">
-          <div *ngFor="let order of failedOrders" class="failed-item p-4 border rounded-lg animate-slide-up flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
+          <div *ngFor="let order of failedOrders" class="failed-item p-3 sm:p-4 border rounded-lg animate-slide-up flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <span class="font-bold text-body-md text-primary break-words block">{{ order.clientName }}</span>
                 <span class="text-caption text-muted block">{{ order.code }} • {{ order.vendorName }}</span>
               </div>
-              <span class="badge badge--failed">Fallido</span>
+              <span class="badge badge--failed flex-shrink-0">Fallido</span>
             </div>
-            <div class="failed-reason p-3 bg-error-container/30 border border-error-container/40 rounded-lg text-error text-body-sm font-medium">
+            <div class="failed-reason p-2.5 sm:p-3 bg-error-container/30 border border-error-container/40 rounded-lg text-error text-body-sm font-medium">
               <span class="material-symbols-outlined text-sm">warning</span> Motivo: {{ order.failedReason || 'No especificado' }}
             </div>
           </div>
@@ -144,13 +144,13 @@
         </div>
 
         <div class="delivered-list space-y-3" *ngIf="deliveredOrders.length > 0">
-          <div *ngFor="let order of deliveredOrders" class="delivered-item p-4 border rounded-lg animate-slide-up flex flex-col gap-2 bg-neutral-50/50">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
+          <div *ngFor="let order of deliveredOrders" class="delivered-item p-3 sm:p-4 border rounded-lg animate-slide-up flex flex-col gap-2 bg-neutral-50/50">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <span class="font-bold text-body-md text-primary break-words block">{{ order.clientName }}</span>
                 <span class="text-caption text-muted block">{{ order.code }} • {{ order.vendorName || 'Sin asignar' }}</span>
               </div>
-              <div class="text-right flex flex-col items-end gap-1">
+              <div class="flex items-center sm:flex-col sm:items-end justify-between sm:justify-start gap-1">
                 <span class="font-bold text-body-md text-success">{{ formatCurrency(order.total) }}</span>
                 <div class="flex items-center gap-1">
                   <span class="badge text-[10px] flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
@@ -164,7 +164,7 @@
             <!-- Product details -->
             <div class="order-items-detail text-caption text-muted border-t pt-2 mt-1">
               <span class="font-semibold text-xs block mb-1">Detalle de Productos:</span>
-              <div class="flex flex-wrap gap-x-4 gap-y-1">
+              <div class="flex flex-wrap gap-1.5 sm:gap-x-4 sm:gap-y-1">
                 <div *ngFor="let item of order.items" class="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">
                   {{ item.quantity }}x {{ item.name }} ({{ formatCurrency(item.price) }})
                 </div>
@@ -175,16 +175,16 @@
       </section>
 
       <!-- Day Close Action -->
-      <section class="close-day-section pt-6 border-t flex flex-col sm:flex-row gap-4" *ngIf="!isTodayClosed">
-        <button class="btn btn--outline flex-1 py-4 text-body-md flex items-center justify-center gap-2" 
+      <section class="close-day-section pt-6 border-t flex flex-col sm:flex-row gap-3 sm:gap-4" *ngIf="!isTodayClosed">
+        <button class="btn btn--outline flex-1 py-3 sm:py-4 px-4 text-body-sm sm:text-body-md flex items-center justify-center gap-2" 
                 (click)="openMoveModal()"
                 [disabled]="pendingCount + failedCount === 0"
                 title="Mover pedidos no completados al día siguiente">
-          <span class="material-symbols-outlined">update</span>
+          <span class="material-symbols-outlined text-base">update</span>
           <span>Mover no completados al día siguiente ({{ pendingCount + failedCount }})</span>
         </button>
-        <button class="btn btn--primary flex-1 py-4 text-body-md flex items-center justify-center gap-2" (click)="closeDay()">
-          <span class="material-symbols-outlined">lock</span>
+        <button class="btn btn--primary flex-1 py-3 sm:py-4 px-4 text-body-sm sm:text-body-md flex items-center justify-center gap-2" (click)="closeDay()">
+          <span class="material-symbols-outlined text-base">lock</span>
           <span>Realizar Cierre de Jornada (Reiniciar)</span>
         </button>
       </section>
@@ -200,17 +200,26 @@
     <!-- ==================== TAB 2: HISTORIAL POR DÍA ==================== -->
     <div *ngIf="activeTab === 'history'" class="report-container space-y-6 animate-fade-in">
       <!-- Date Selector Card -->
-      <div class="date-selector-card section-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="date-selector-card section-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div class="calendar-icon-wrap p-2 bg-primary/10 rounded text-primary">
+          <div class="calendar-icon-wrap p-2 bg-primary/10 rounded text-primary flex-shrink-0">
             <span class="material-symbols-outlined">calendar_month</span>
           </div>
           <div>
-            <h4 class="font-bold text-body-lg text-primary">Seleccionar Jornada Operativa</h4>
+            <h4 class="font-bold text-body-md sm:text-body-lg text-primary">Seleccionar Jornada Operativa</h4>
             <p class="text-caption text-muted">Elige un día específico para auditar su desempeño.</p>
           </div>
         </div>
-        <input type="date" [(ngModel)]="historyDate" (change)="onDateChange()" class="input-date-picker" />
+        <div class="flex flex-wrap items-center gap-3">
+          <input type="date" [(ngModel)]="historyDate" (change)="onDateChange()" class="input-date-picker" />
+          <button class="btn btn--outline py-2 px-3 text-caption font-semibold flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                  (click)="exportHistoricalDay()"
+                  [disabled]="historyReportData.length === 0 && historyDeliveredOrders.length === 0"
+                  title="Descargar esta jornada en archivo Excel">
+            <span class="material-symbols-outlined text-[16px]">download</span>
+            <span>Exportar Día (.xlsx)</span>
+          </button>
+        </div>
       </div>
 
       <!-- Loading Spinner -->
@@ -230,30 +239,30 @@
 
         <div *ngIf="historyReportData.length > 0" class="space-y-6">
           <!-- KPI Cards Grid -->
-          <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <!-- Ventas Sistema -->
-            <div class="kpi-card section-card p-5 flex flex-col justify-between">
+            <div class="kpi-card section-card p-4 sm:p-5 flex flex-col justify-between">
               <div>
                 <span class="text-caption text-muted font-medium uppercase tracking-wider block mb-1">Ventas Sistema</span>
-                <h3 class="text-headline-lg font-extrabold text-primary">{{ formatCurrency(historyTotalSistema) }}</h3>
+                <h3 class="text-headline-md sm:text-headline-lg font-extrabold text-primary truncate">{{ formatCurrency(historyTotalSistema) }}</h3>
               </div>
               <p class="text-caption text-muted mt-2">Valor de pedidos entregados.</p>
             </div>
 
             <!-- Ventas Recaudado -->
-            <div class="kpi-card section-card p-5 flex flex-col justify-between">
+            <div class="kpi-card section-card p-4 sm:p-5 flex flex-col justify-between">
               <div>
                 <span class="text-caption text-muted font-medium uppercase tracking-wider block mb-1">Recaudación Declarada</span>
-                <h3 class="text-headline-lg font-extrabold text-success">{{ formatCurrency(historyTotalCollected) }}</h3>
+                <h3 class="text-headline-md sm:text-headline-lg font-extrabold text-success truncate">{{ formatCurrency(historyTotalCollected) }}</h3>
               </div>
               <p class="text-caption text-muted mt-2">Dinero reportado por vendedores.</p>
             </div>
 
             <!-- Diferencia -->
-            <div class="kpi-card section-card p-5 flex flex-col justify-between">
+            <div class="kpi-card section-card p-4 sm:p-5 flex flex-col justify-between">
               <div>
                 <span class="text-caption text-muted font-medium uppercase tracking-wider block mb-1">Diferencia de Caja</span>
-                <h3 class="text-headline-lg font-extrabold"
+                <h3 class="text-headline-md sm:text-headline-lg font-extrabold truncate"
                     [class.text-success]="historyDifference === 0"
                     [class.text-error]="historyDifference < 0"
                     [class.text-warning]="historyDifference > 0">
@@ -268,10 +277,10 @@
             </div>
 
             <!-- Efectividad -->
-            <div class="kpi-card section-card p-5 flex flex-col justify-between">
+            <div class="kpi-card section-card p-4 sm:p-5 flex flex-col justify-between">
               <div>
                 <span class="text-caption text-muted font-medium uppercase tracking-wider block mb-1">Efectividad Operativa</span>
-                <h3 class="text-headline-lg font-extrabold text-primary">{{ historyEfficiencyRate }}%</h3>
+                <h3 class="text-headline-md sm:text-headline-lg font-extrabold text-primary">{{ historyEfficiencyRate }}%</h3>
               </div>
               <div class="w-full h-2 bg-neutral-200 rounded-full mt-3 overflow-hidden">
                 <div class="h-full bg-primary" [style.width.%]="historyEfficiencyRate"></div>
@@ -280,39 +289,108 @@
           </div>
 
           <!-- Payment Method Summary (Cash vs QR) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div class="section-card p-4 flex items-center justify-between border-l-4 border-l-secondary">
-              <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-secondary/10 rounded-lg text-secondary">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="p-2 sm:p-2.5 bg-secondary/10 rounded-lg text-secondary flex-shrink-0">
                   <span class="material-symbols-outlined text-2xl">payments</span>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <span class="text-caption text-muted uppercase tracking-wider block font-medium">Cobrado en Efectivo</span>
-                  <h4 class="text-headline-md font-extrabold text-secondary">{{ formatCurrency(historyCashTotal) }}</h4>
+                  <h4 class="text-headline-sm sm:text-headline-md font-extrabold text-secondary truncate">{{ formatCurrency(historyCashTotal) }}</h4>
                 </div>
               </div>
-              <span class="badge badge--cash text-xs">Efectivo</span>
+              <span class="badge badge--cash text-xs flex-shrink-0">Efectivo</span>
             </div>
 
             <div class="section-card p-4 flex items-center justify-between border-l-4 border-l-primary">
-              <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-primary/10 rounded-lg text-primary">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="p-2 sm:p-2.5 bg-primary/10 rounded-lg text-primary flex-shrink-0">
                   <span class="material-symbols-outlined text-2xl">qr_code_2</span>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <span class="text-caption text-muted uppercase tracking-wider block font-medium">Cobrado en QR</span>
-                  <h4 class="text-headline-md font-extrabold text-primary">{{ formatCurrency(historyQrTotal) }}</h4>
+                  <h4 class="text-headline-sm sm:text-headline-md font-extrabold text-primary truncate">{{ formatCurrency(historyQrTotal) }}</h4>
                 </div>
               </div>
-              <span class="badge badge--qr text-xs">QR</span>
+              <span class="badge badge--qr text-xs flex-shrink-0">QR</span>
             </div>
           </div>
 
           <!-- Breakdown by Vendor -->
           <section class="section-card">
-            <h3 class="text-headline-md font-semibold text-primary mb-4">Desglose Operativo por Vendedor</h3>
-            
-            <div class="table-wrap">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-headline-md font-semibold text-primary">Desglose Operativo por Vendedor</h3>
+              <span class="text-caption text-muted md:hidden font-medium">{{ historyReportData.length }} vendedores</span>
+            </div>
+
+            <!-- Mobile Vendor Cards (< 768px) -->
+            <div class="vendor-cards-mobile md:hidden space-y-3">
+              <div *ngFor="let item of historyReportData" class="vendor-report-card p-3.5 border rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-3">
+                <div class="flex justify-between items-start gap-2">
+                  <div>
+                    <h4 class="font-bold text-body-md text-primary">{{ item.vendedor_nombre }}</h4>
+                    <span class="text-caption text-muted">{{ item.total_pedidos }} pedidos asignados</span>
+                  </div>
+                  <span class="badge text-xs"
+                        [class.badge--success]="toNumber(item.diferencia) === 0"
+                        [class.badge--failed]="toNumber(item.diferencia) < 0"
+                        [class.badge--warn]="toNumber(item.diferencia) > 0">
+                    {{ toNumber(item.diferencia) === 0 ? 'Cuadre OK' : (toNumber(item.diferencia) < 0 ? 'Faltante' : 'Sobrante') }}
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 p-2 bg-neutral-50 rounded text-center text-caption">
+                  <div>
+                    <span class="text-muted block text-[10px]">Entregados</span>
+                    <span class="text-success font-bold text-body-sm">{{ item.entregados }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted block text-[10px]">Fallidos</span>
+                    <span class="text-error font-bold text-body-sm">{{ item.fallidos }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted block text-[10px]">En Ruta/Pend.</span>
+                    <span class="text-muted font-bold text-body-sm">{{ (item.en_ruta || 0) + (item.pendientes || 0) }}</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-caption pt-1 border-t border-neutral-100">
+                  <div>
+                    <span class="text-muted block">Efectivo:</span>
+                    <span class="font-semibold text-secondary text-body-sm">{{ formatCurrency(toNumber(item.total_efectivo)) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted block">QR:</span>
+                    <span class="font-semibold text-primary text-body-sm">{{ formatCurrency(toNumber(item.total_qr)) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted block">Total Sistema:</span>
+                    <span class="font-semibold text-body-sm">{{ formatCurrency(toNumber(item.total_sistema_entregado)) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-muted block">Recaudado:</span>
+                    <span class="font-bold text-success text-body-sm">{{ formatCurrency(toNumber(item.total_recaudado)) }}</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-neutral-100 text-caption">
+                  <span class="text-muted font-medium">Diferencia:</span>
+                  <span class="font-extrabold text-body-sm"
+                        [class.text-success]="toNumber(item.diferencia) === 0"
+                        [class.text-error]="toNumber(item.diferencia) < 0"
+                        [class.text-warning]="toNumber(item.diferencia) > 0">
+                    {{ (toNumber(item.diferencia) > 0 ? '+' : '') + formatCurrency(toNumber(item.diferencia)) }}
+                  </span>
+                </div>
+                <div class="text-caption text-muted italic bg-neutral-50 px-2.5 py-1 rounded" *ngIf="item.observaciones">
+                  Obs: {{ item.observaciones }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Desktop Table (>= 768px) -->
+            <div class="table-wrap hidden md:block">
               <table class="report-table">
                 <thead>
                   <tr>
@@ -367,13 +445,13 @@
             </div>
 
             <div class="delivered-list space-y-3" *ngIf="historyDeliveredOrders.length > 0">
-              <div *ngFor="let order of historyDeliveredOrders" class="delivered-item p-4 border rounded-lg flex flex-col gap-2 bg-neutral-50/50">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
+              <div *ngFor="let order of historyDeliveredOrders" class="delivered-item p-3 sm:p-4 border rounded-lg flex flex-col gap-2 bg-neutral-50/50">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <span class="font-bold text-body-md text-primary break-words block">{{ order.clientName }}</span>
                     <span class="text-caption text-muted block">{{ order.code }} • {{ order.vendorName || 'Sin asignar' }}</span>
                   </div>
-                  <div class="text-right flex flex-col items-end gap-1">
+                  <div class="flex items-center sm:flex-col sm:items-end justify-between sm:justify-start gap-1">
                     <span class="font-bold text-body-md text-success">{{ formatCurrency(order.total) }}</span>
                     <div class="flex items-center gap-1">
                       <span class="badge text-[10px] flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
@@ -387,7 +465,7 @@
                 <!-- Product details -->
                 <div class="order-items-detail text-caption text-muted border-t pt-2 mt-1">
                   <span class="font-semibold text-xs block mb-1">Detalle de Productos:</span>
-                  <div class="flex flex-wrap gap-x-4 gap-y-1">
+                  <div class="flex flex-wrap gap-1.5 sm:gap-x-4 sm:gap-y-1">
                     <div *ngFor="let item of order.items" class="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">
                       {{ item.quantity }}x {{ item.name }} ({{ formatCurrency(item.price) }})
                     </div>
@@ -398,7 +476,7 @@
           </section>
 
           <!-- Daily details: Products and Incidents -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <!-- Product list -->
             <section class="section-card">
               <h3 class="text-headline-md font-semibold text-primary mb-4">Productos Entregados</h3>
@@ -436,16 +514,16 @@
               </div>
 
               <div class="failed-list space-y-3" *ngIf="historyFailedOrders.length > 0">
-                <div *ngFor="let order of historyFailedOrders" class="failed-item p-4 border rounded-lg flex flex-col gap-2 bg-neutral-55">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <span class="font-bold text-body-md text-primary">{{ order.clientName }}</span>
+                <div *ngFor="let order of historyFailedOrders" class="failed-item p-3 sm:p-4 border rounded-lg flex flex-col gap-2 bg-neutral-55">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                      <span class="font-bold text-body-md text-primary break-words block">{{ order.clientName }}</span>
                       <span class="text-caption text-muted block">{{ order.vendorName }}</span>
                     </div>
-                    <span class="badge badge--failed text-xs">Fallido</span>
+                    <span class="badge badge--failed text-xs flex-shrink-0">Fallido</span>
                   </div>
-                  <div class="failed-reason p-2 bg-error-container/30 border border-error-container/40 rounded text-error text-body-sm font-medium">
-                    Motivo: {{ order.failedReason || 'No especificado' }}
+                  <div class="failed-reason p-2.5 sm:p-3 bg-error-container/30 border border-error-container/40 rounded text-error text-body-sm font-medium">
+                    <span class="material-symbols-outlined text-sm">warning</span> Motivo: {{ order.failedReason || 'No especificado' }}
                   </div>
                 </div>
               </div>
@@ -471,51 +549,143 @@
           <p class="text-caption text-muted mt-1">Cuando finalices una jornada de ventas, los reportes mensuales se compilarán aquí.</p>
         </div>
 
+        <!-- Monthly Actions Bar -->
+        <div class="section-card p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface-container-low" *ngIf="monthlySummaries.length > 0">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-primary text-xl">analytics</span>
+            <span class="text-caption sm:text-body-sm text-muted font-medium">
+              Balances mensuales consolidados (<strong class="text-primary">{{ monthlySummaries.length }}</strong> períodos registrados)
+            </span>
+          </div>
+          <button class="btn btn--outline py-2 px-3.5 text-caption font-semibold flex items-center justify-center gap-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                  (click)="exportAllMonths()"
+                  title="Descargar libro Excel con consolidado anual y hojas mensuales">
+            <span class="material-symbols-outlined text-[16px]">table_view</span>
+            <span>Exportar Todo el Historial (.xlsx)</span>
+          </button>
+        </div>
+
         <!-- Monthly Aggregated Cards -->
         <div *ngIf="monthlySummaries.length > 0" class="space-y-4">
           <div *ngFor="let month of monthlySummaries" class="monthly-accordion-item section-card overflow-hidden">
             <!-- Accordion Header -->
-            <div class="accordion-header p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-neutral-50"
+            <div class="accordion-header p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 cursor-pointer hover:bg-neutral-50"
                  (click)="toggleMonth(month)">
               <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary text-headline-lg">
+                <span class="material-symbols-outlined text-primary text-headline-lg flex-shrink-0">
                   {{ month.isExpanded ? 'expand_more' : 'chevron_right' }}
                 </span>
                 <div>
-                  <h3 class="text-headline-md font-bold text-primary">{{ month.monthName }}</h3>
+                  <h3 class="text-headline-sm sm:text-headline-md font-bold text-primary">{{ month.monthName }}</h3>
                   <p class="text-caption text-muted">{{ month.daysCount }} días de operación registrados</p>
                 </div>
               </div>
 
-              <!-- General Stats for the Month -->
-              <div class="flex flex-wrap items-center gap-6">
-                <div>
-                  <span class="text-caption text-muted block">Ventas Recaudadas</span>
-                  <span class="font-bold text-body-lg text-success">{{ formatCurrency(month.totalRecaudado) }}</span>
+              <!-- General Stats for the Month & Action Button -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
+                <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 sm:gap-6 pt-2 md:pt-0 border-t md:border-t-0 border-neutral-100">
+                  <div>
+                    <span class="text-caption text-muted block text-[11px] sm:text-caption">Recaudado</span>
+                    <span class="font-bold text-body-sm sm:text-body-lg text-success">{{ formatCurrency(month.totalRecaudado) }}</span>
+                  </div>
+                  <div class="hidden sm:block border-l h-8"></div>
+                  <div>
+                    <span class="text-caption text-muted block text-[11px] sm:text-caption">Diferencia</span>
+                    <span class="font-bold text-body-sm sm:text-body-lg"
+                          [class.text-success]="month.totalDiferencia === 0"
+                          [class.text-error]="month.totalDiferencia < 0"
+                          [class.text-warning]="month.totalDiferencia > 0">
+                      {{ (month.totalDiferencia > 0 ? '+' : '') + formatCurrency(month.totalDiferencia) }}
+                    </span>
+                  </div>
+                  <div class="hidden sm:block border-l h-8"></div>
+                  <div>
+                    <span class="text-caption text-muted block text-[11px] sm:text-caption">Efectividad</span>
+                    <span class="font-bold text-body-sm sm:text-body-lg text-primary">{{ month.efficiencyRate }}%</span>
+                  </div>
                 </div>
-                <div class="hidden sm:block border-l h-8"></div>
-                <div>
-                  <span class="text-caption text-muted block">Diferencia Total</span>
-                  <span class="font-bold text-body-lg"
-                        [class.text-success]="month.totalDiferencia === 0"
-                        [class.text-error]="month.totalDiferencia < 0"
-                        [class.text-warning]="month.totalDiferencia > 0">
-                    {{ (month.totalDiferencia > 0 ? '+' : '') + formatCurrency(month.totalDiferencia) }}
-                  </span>
-                </div>
-                <div class="hidden sm:block border-l h-8"></div>
-                <div>
-                  <span class="text-caption text-muted block">Efectividad Promedio</span>
-                  <span class="font-bold text-body-lg text-primary">{{ month.efficiencyRate }}%</span>
-                </div>
+
+                <button class="btn btn--outline py-1.5 px-3 text-caption font-semibold flex items-center justify-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 flex-shrink-0"
+                        (click)="exportCurrentMonth(month, $event)"
+                        title="Descargar reporte mensual y detalle diario en Excel">
+                  <span class="material-symbols-outlined text-[16px]">download</span>
+                  <span>Descargar Mes (.xlsx)</span>
+                </button>
               </div>
             </div>
 
             <!-- Accordion Body (Daily breakdown within the month) -->
-            <div *ngIf="month.isExpanded" class="accordion-body border-t bg-neutral-50/30 p-5 animate-slide-up">
-              <h4 class="font-bold text-body-md text-primary mb-3">Detalle Diario de la Operación</h4>
+            <div *ngIf="month.isExpanded" class="accordion-body border-t bg-neutral-50/30 p-3.5 sm:p-5 animate-slide-up">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <h4 class="font-bold text-body-md text-primary">Detalle Diario de la Operación</h4>
+                <button class="btn btn--outline py-1 px-3 text-caption font-semibold flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 w-fit"
+                        (click)="exportCurrentMonth(month, $event)">
+                  <span class="material-symbols-outlined text-[15px]">file_download</span>
+                  <span>Exportar Mes Completo (.xlsx)</span>
+                </button>
+              </div>
               
-              <div class="table-wrap">
+              <!-- Mobile Cards for Daily Closures (< 768px) -->
+              <div class="daily-cards-mobile md:hidden space-y-3">
+                <div *ngFor="let rec of month.dailyClosures" class="daily-closure-card p-3.5 border rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-2.5">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <span class="font-bold text-body-md text-primary">{{ rec.fecha.split('T')[0] }}</span>
+                      <span class="text-caption text-muted block">{{ rec.total_pedidos }} pedidos totales</span>
+                    </div>
+                    <span class="badge text-[10px]"
+                          [class.badge--success]="rec.tipo_registro === 'CERRADO'"
+                          [class.badge--info]="rec.tipo_registro === 'EN_CURSO'">
+                      {{ rec.tipo_registro || 'CERRADO' }}
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-2 p-2 bg-neutral-50 rounded text-center text-caption">
+                    <div>
+                      <span class="text-muted block text-[10px]">Entregados</span>
+                      <span class="text-success font-bold text-body-sm">{{ rec.total_entregados ?? rec.entregados }}</span>
+                    </div>
+                    <div>
+                      <span class="text-muted block text-[10px]">Fallidos</span>
+                      <span class="text-error font-bold text-body-sm">{{ rec.total_fallidos ?? rec.fallidos }}</span>
+                    </div>
+                    <div>
+                      <span class="text-muted block text-[10px]">Efectividad</span>
+                      <span class="text-primary font-bold text-body-sm">{{ rec.porcentaje_efectividad ?? rec.efficiencyRate }}%</span>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 text-caption pt-1 border-t border-neutral-100">
+                    <div>
+                      <span class="text-muted block">Ventas Sistema:</span>
+                      <span class="font-medium text-body-sm">{{ formatCurrency(toNumber(rec.total_ventas_sistema ?? rec.total_sistema_entregado)) }}</span>
+                    </div>
+                    <div>
+                      <span class="text-muted block">Recaudado:</span>
+                      <span class="font-bold text-success text-body-sm">{{ formatCurrency(toNumber(rec.total_ventas_recaudado ?? rec.total_recaudado)) }}</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-1 text-caption">
+                    <span class="text-muted font-medium">Diferencia:</span>
+                    <span class="font-bold text-body-sm"
+                          [class.text-success]="toNumber(rec.total_diferencias ?? rec.diferencia) === 0"
+                          [class.text-error]="toNumber(rec.total_diferencias ?? rec.diferencia) < 0"
+                          [class.text-warning]="toNumber(rec.total_diferencias ?? rec.diferencia) > 0">
+                      {{ formatCurrency(toNumber(rec.total_diferencias ?? rec.diferencia)) }}
+                    </span>
+                  </div>
+
+                  <button class="btn btn--secondary w-full py-2 px-3 text-caption flex items-center justify-center gap-1 mt-1"
+                          (click)="viewDayDetails(rec.fecha)">
+                    <span class="material-symbols-outlined text-[14px]">visibility</span>
+                    Ver Auditoría del Día
+                  </button>
+                </div>
+              </div>
+
+              <!-- Desktop Nested Table (>= 768px) -->
+              <div class="table-wrap hidden md:block">
                 <table class="report-table report-table--nested">
                   <thead>
                     <tr>
@@ -601,9 +771,9 @@
         </div>
       </div>
 
-      <div class="modal-footer mt-6 flex gap-4">
-        <button class="btn btn--outline flex-1" (click)="cancelCloseDay()">Cancelar</button>
-        <button class="btn btn--primary flex-1" (click)="confirmCloseDay()">
+      <div class="modal-footer mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
+        <button class="btn btn--outline w-full sm:flex-1 py-2.5 sm:py-3" (click)="cancelCloseDay()">Cancelar</button>
+        <button class="btn btn--primary w-full sm:flex-1 py-2.5 sm:py-3 flex items-center justify-center gap-2" (click)="confirmCloseDay()">
           <span class="material-symbols-outlined">lock</span> Confirmar cierre
         </button>
       </div>
@@ -633,9 +803,9 @@
         </p>
       </div>
 
-      <div class="modal-footer mt-6 flex gap-4">
-        <button class="btn btn--outline flex-1" (click)="cancelMoveModal()" [disabled]="isMovingOrders">Cancelar</button>
-        <button class="btn btn--primary flex-1 flex items-center justify-center gap-2" (click)="confirmMoveOrders()" [disabled]="isMovingOrders">
+      <div class="modal-footer mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4">
+        <button class="btn btn--outline w-full sm:flex-1 py-2.5 sm:py-3" (click)="cancelMoveModal()" [disabled]="isMovingOrders">Cancelar</button>
+        <button class="btn btn--primary w-full sm:flex-1 py-2.5 sm:py-3 flex items-center justify-center gap-2" (click)="confirmMoveOrders()" [disabled]="isMovingOrders">
           <span class="material-symbols-outlined" *ngIf="!isMovingOrders">check_circle</span>
           <span>{{ isMovingOrders ? 'Moviendo...' : 'Confirmar traslado' }}</span>
         </button>

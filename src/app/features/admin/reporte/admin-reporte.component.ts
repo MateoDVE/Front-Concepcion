@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Product } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
+import { ExcelExportService } from '../../../core/services/excel-export.service';
 
 interface ProductSummary {
   productId: string;
@@ -37,6 +38,7 @@ interface MonthlySummary {
 })
 export class AdminReporteComponent implements OnInit {
   private stateService = inject(StateService);
+  private excelService = inject(ExcelExportService);
 
   // Tab State
   activeTab: 'today' | 'history' | 'monthly' = 'today';
@@ -452,5 +454,34 @@ export class AdminReporteComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return `Bs. ${value.toFixed(2)}`;
+  }
+
+  exportCurrentMonth(month: MonthlySummary, event?: Event): void {
+    event?.stopPropagation();
+    const monthOrders = this.orders.filter((o) => {
+      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
+      const localDate = this.excelService.formatDate(o.createdAt);
+      return orderDateStr.startsWith(month.monthKey) || localDate.startsWith(month.monthKey);
+    });
+    this.excelService.exportMonth(month, monthOrders);
+  }
+
+  exportAllMonths(): void {
+    if (this.monthlySummaries.length === 0) return;
+    this.excelService.exportAllMonths(this.monthlySummaries, this.orders);
+  }
+
+  exportHistoricalDay(): void {
+    const dayOrders = this.orders.filter((o) => {
+      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
+      const localDate = this.excelService.formatDate(o.createdAt);
+      return orderDateStr === this.historyDate || localDate === this.historyDate;
+    });
+    this.excelService.exportDailyReport(
+      this.historyDate,
+      dayOrders,
+      this.historyReportData,
+      this.historyProductSummaries
+    );
   }
 }

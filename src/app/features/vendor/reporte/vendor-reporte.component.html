@@ -5,24 +5,23 @@
       <h2 class="text-headline-lg font-bold text-primary">Resumen Diario</h2>
       <p class="text-muted text-body-sm">Balance consolidado del vendedor {{ activeVendor?.name }}.</p>
     </div>
-    <div class="date-selector-wrap">
+    <div class="date-selector-wrap w-full sm:w-auto">
       <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="input-date-picker" />
     </div>
   </div>
 
   <div class="report-content space-y-6">
     <!-- Collected Monies Card -->
-    <!-- Collected Monies Card -->
-    <section class="cash-card relative overflow-hidden rounded-lg p-6 bg-secondary text-on-secondary shadow-lg">
+    <section class="cash-card relative overflow-hidden rounded-lg p-4 sm:p-6 bg-secondary text-on-secondary shadow-lg">
       <div class="bg-blur-accent"></div>
       <div class="relative z-10 space-y-4">
         <div>
           <p class="text-caption uppercase tracking-wider opacity-85 mb-1">Efectivo Físico a Rendir</p>
-          <h2 class="text-[36px] font-extrabold leading-none text-white">{{ formatCurrency(totalCashCollected) }}</h2>
+          <h2 class="hero-cash-amount font-extrabold leading-none text-white">{{ formatCurrency(totalCashCollected) }}</h2>
         </div>
 
         <!-- Breakdown Cash vs QR -->
-        <div class="payment-reconciliation-bar p-3 bg-white/10 rounded-lg flex justify-between items-center text-body-sm">
+        <div class="payment-reconciliation-bar p-3 bg-white/10 rounded-lg flex flex-wrap justify-between items-center gap-2 text-body-sm">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-base">payments</span>
             <span>Efectivo: <strong>{{ formatCurrency(totalCashCollected) }}</strong></span>
@@ -75,15 +74,15 @@
       </div>
 
       <div class="cash-list space-y-2" *ngIf="deliveredCount > 0">
-        <div *ngFor="let order of vendorOrders" class="cash-item p-3 border rounded-lg flex justify-between items-center" [class.hidden]="order.status !== 'delivered'">
-          <div class="flex items-center gap-2.5">
-            <span class="state-dot delivered"></span>
-            <div>
-              <span class="text-body-sm font-bold block">{{ order.clientName }}</span>
+        <div *ngFor="let order of vendorOrders" class="cash-item p-3 border rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2" [class.hidden]="order.status !== 'delivered'">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="state-dot delivered flex-shrink-0"></span>
+            <div class="min-w-0">
+              <span class="text-body-sm font-bold block truncate">{{ order.clientName }}</span>
               <span class="text-caption text-muted">{{ order.code }}</span>
             </div>
           </div>
-          <div class="flex items-center gap-2.5">
+          <div class="flex items-center justify-between sm:justify-start gap-2.5">
             <span class="badge text-xs flex items-center gap-1" [ngClass]="order.paymentMethod === 'qr' ? 'badge--qr' : 'badge--cash'">
               <span class="material-symbols-outlined text-[12px]">{{ order.paymentMethod === 'qr' ? 'qr_code_2' : 'payments' }}</span>
               {{ order.paymentMethod === 'qr' ? 'QR' : 'Efectivo' }}
