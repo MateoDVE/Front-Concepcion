@@ -318,7 +318,11 @@ export class AdminReporteComponent implements OnInit {
   }
 
   computeHistoricalOrdersSummary() {
-    const histOrders = this.orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === this.historyDate);
+    const histOrders = this.orders.filter(o => {
+      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
+      const localDate = this.excelService.formatDate(o.createdAt);
+      return orderDateStr === this.historyDate || localDate === this.historyDate;
+    });
     this.historyFailedOrders = histOrders.filter(o => o.status === 'failed');
     this.historyDeliveredOrders = histOrders.filter(o => o.status === 'delivered');
 
