@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use 'variables' as *;
 @use 'mixins' as *;
 
@@ -261,6 +262,11 @@ input, select, textarea {
   margin-right: auto;
   padding-left: $container-padding;
   padding-right: $container-padding;
+
+  @media (max-width: 640px) {
+    padding-left: $space-3;
+    padding-right: $space-3;
+  }
 }
 
 .relative { position: relative; }
@@ -374,6 +380,7 @@ input, select, textarea {
 
 // Layout Helpers
 .block { display: block; }
+.hidden { display: none !important; }
 .flex-wrap { flex-wrap: wrap; }
 .flex-\[0\.7\] { flex: 0.7; }
 .flex-\[1\.5\] { flex: 1.5; }
@@ -396,16 +403,22 @@ input, select, textarea {
 
 // Responsive Helpers
 @media (min-width: 640px) {
-  .sm\:block { display: block; }
+  .sm\:block { display: block !important; }
+  .sm\:hidden { display: none !important; }
   .sm\:flex-row { flex-direction: row; }
   .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sm\:items-center { align-items: center; }
   .sm\:justify-between { justify-content: space-between; }
 }
 
 @media (min-width: 768px) {
+  .md\:block { display: block !important; }
+  .md\:hidden { display: none !important; }
+  .md\:flex { display: flex !important; }
   .md\:flex-row { flex-direction: row; }
   .md\:items-center { align-items: center; }
+  .md\:justify-between { justify-content: space-between; }
 }
 
 @media (min-width: 1024px) {
@@ -431,7 +444,7 @@ input, select, textarea {
   &--failed, &--error { @include badge(failed); }
   &--cash {
     background-color: rgba($color-secondary, 0.12);
-    color: darken($color-secondary, 10%);
+    color: color.adjust($color-secondary, $lightness: -10%);
     border: 1px solid rgba($color-secondary, 0.3);
   }
   &--qr {
