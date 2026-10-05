@@ -31,20 +31,74 @@ export class AuthService {
   constructor(@Inject(PLATFORM_ID) platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
     if (this.isBrowser) {
-      this.supabase = createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseKey);
+      this.supabase = createClient(APP_CONFIG.supabaseUrl, APP_CONFIG.supabaseKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false
+        }
+      });
       this.loadPersistedSession();
+      this.initAuthListener();
     }
   }
 
-  private loadPersistedSession() {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('concepcion_auth_user');
-      const savedToken = localStorage.getItem('concepcion_auth_token');
-      
-      if (savedUser && savedToken) {
-        this.token = savedToken;
-        this.currentUserSubject.next(JSON.parse(savedUser));
+  private initAuthListener() {
+    this.supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.access_token) {
+        this.token = session.access_token;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('concepcion_auth_token', session.access_token);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        this.token = null;
+        this.currentUserSubject.next(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('concepcion_auth_token');
+          localStorage.removeItem('concepcion_auth_user');
+        }
       }
+    });
+  }
+
+  private async loadPersistedSession() {
+    if (typeof window === 'undefined') return;
+
+    const savedUser = localStorage.getItem('concepcion_auth_user');
+    const savedToken = localStorage.getItem('concepcion_auth_token');
+    
+    if (savedUser && savedToken) {
+      this.token = savedToken;
+      this.currentUserSubject.next(JSON.parse(savedUser));
+    }
+
+    try {
+      const { data: { session }, error } = await this.supabase.auth.getSession();
+      if (session?.access_token) {
+        this.token = session.access_token;
+        localStorage.setItem('concepcion_auth_token', session.access_token);
+      } else if (error) {
+        console.warn('Sesión no sincronizada con Supabase:', error.message);
+      }
+    } catch (err) {
+      console.warn('No se pudo verificar la sesión con Supabase:', err);
+    }
+  }
+
+  public async refreshSession(): Promise<string | null> {
+    if (!this.supabase) return null;
+    try {
+      const { data, error } = await this.supabase.auth.refreshSession();
+      if (error || !data.session) {
+        return null;
+      }
+      this.token = data.session.access_token;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('concepcion_auth_token', this.token);
+      }
+      return this.token;
+    } catch {
+      return null;
     }
   }
 
