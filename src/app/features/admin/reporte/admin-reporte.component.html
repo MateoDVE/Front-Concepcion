@@ -535,6 +535,7 @@
 
     <!-- ==================== TAB 3: REPORTE MENSUAL ==================== -->
     <div *ngIf="activeTab === 'monthly'" class="report-container space-y-6 animate-fade-in">
+      <app-client-deliveries [orders]="orders" [clients]="(clients$ | async) || []"></app-client-deliveries>
       <!-- Loading Spinner -->
       <div *ngIf="monthlyLoading" class="loading-state-overlay flex flex-col items-center justify-center py-12">
         <div class="spinner mb-4"></div>

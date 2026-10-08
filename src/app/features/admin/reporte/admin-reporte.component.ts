@@ -5,6 +5,7 @@ import { StateService } from '../../../core/services/state.service';
 import { Order, Product } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
 import { ExcelExportService } from '../../../core/services/excel-export.service';
+import { ClientDeliveriesComponent } from './client-deliveries.component';
 
 interface ProductSummary {
   productId: string;
@@ -31,7 +32,7 @@ interface MonthlySummary {
 
 @Component({
   selector: 'app-admin-reporte',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent],
+  imports: [CommonModule, FormsModule, FeedbackModalComponent, ClientDeliveriesComponent],
   templateUrl: './admin-reporte.component.html',
   styleUrl: './admin-reporte.component.scss',
   standalone: true
@@ -39,6 +40,7 @@ interface MonthlySummary {
 export class AdminReporteComponent implements OnInit {
   private stateService = inject(StateService);
   private excelService = inject(ExcelExportService);
+  readonly clients$ = this.stateService.clients$;
 
   // Tab State
   activeTab: 'today' | 'history' | 'monthly' = 'today';
