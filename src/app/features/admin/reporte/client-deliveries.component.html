@@ -1,0 +1,44 @@
+<section class="client-deliveries section-card" aria-labelledby="client-deliveries-title">
+  <h3 id="client-deliveries-title" class="text-body-lg font-bold text-primary">Entregas por cliente</h3>
+  <p class="text-body-sm text-muted">Consulta cuántas veces recibió un pedido y qué productos se le entregaron en el mes.</p>
+
+  <div class="delivery-filters">
+    <div>
+      <label for="delivery-month">Mes de entrega</label>
+      <input id="delivery-month" type="month" [(ngModel)]="selectedMonth" (ngModelChange)="updateReport()">
+    </div>
+    <div>
+      <label for="delivery-client">Cliente</label>
+      <select id="delivery-client" [(ngModel)]="selectedClientId" (ngModelChange)="updateReport()">
+        <option value="">Selecciona un cliente</option>
+        <option *ngFor="let client of clientOptions" [value]="client.id">{{ client.name }}{{ client.phone ? ' · ' + client.phone : '' }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div aria-live="polite">
+    <p *ngIf="!selectedClientId || !selectedMonth" class="text-body-sm text-muted">Selecciona el mes y el cliente para consultar sus entregas.</p>
+    <ng-container *ngIf="selectedClientId && selectedMonth">
+      <p class="delivery-count"><strong>{{ deliveries.length }}</strong> {{ deliveries.length === 1 ? 'entrega realizada' : 'entregas realizadas' }}</p>
+      <p class="text-caption text-muted">Cada pedido entregado cuenta como una entrega. Se usa la fecha de entrega en Bolivia; se excluyen pedidos sin fecha de entrega registrada.</p>
+      <p *ngIf="deliveries.length === 0" class="text-body-sm text-muted">El cliente no tiene entregas registradas en este mes.</p>
+    </ng-container>
+  </div>
+
+  <ng-container *ngIf="deliveries.length > 0">
+    <h4 class="font-bold text-primary">Productos entregados en el mes</h4>
+    <ul class="product-totals">
+      <li *ngFor="let product of productTotals"><span>{{ product.name }}</span><strong>{{ product.quantity }} unidades</strong></li>
+    </ul>
+    <h4 class="font-bold text-primary">Detalle de entregas</h4>
+    <ol class="delivery-list">
+      <li *ngFor="let entry of deliveries">
+        <div class="delivery-heading"><strong>{{ entry.date | date:'dd/MM/yyyy' }}</strong><span class="text-caption text-muted">Pedido {{ entry.order.code || entry.order.id }}</span></div>
+        <ul>
+          <li *ngFor="let item of entry.order.items">{{ item.quantity }} × {{ item.name }}</li>
+        </ul>
+        <p *ngIf="entry.order.items.length === 0" class="text-caption text-muted">Sin detalle de productos registrado.</p>
+      </li>
+    </ol>
+  </ng-container>
+</section>
