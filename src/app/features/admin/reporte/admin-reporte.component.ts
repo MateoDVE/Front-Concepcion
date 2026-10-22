@@ -320,11 +320,9 @@ export class AdminReporteComponent implements OnInit {
   }
 
   computeHistoricalOrdersSummary() {
-    const histOrders = this.orders.filter(o => {
-      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
-      const localDate = this.excelService.formatDate(o.createdAt);
-      return orderDateStr === this.historyDate || localDate === this.historyDate;
-    });
+    const histOrders = this.orders.filter(o =>
+      this.excelService.formatDate(o.createdAt) === this.historyDate
+    );
     this.historyFailedOrders = histOrders.filter(o => o.status === 'failed');
     this.historyDeliveredOrders = histOrders.filter(o => o.status === 'delivered');
 
@@ -453,9 +451,7 @@ export class AdminReporteComponent implements OnInit {
 
   // --- General Helpers ---
   getLocalDateString(date: Date = new Date()): string {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 10);
-    return localISOTime;
+    return this.excelService.formatDate(date);
   }
 
   formatCurrency(value: number): string {
@@ -464,11 +460,9 @@ export class AdminReporteComponent implements OnInit {
 
   exportCurrentMonth(month: MonthlySummary, event?: Event): void {
     event?.stopPropagation();
-    const monthOrders = this.orders.filter((o) => {
-      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
-      const localDate = this.excelService.formatDate(o.createdAt);
-      return orderDateStr.startsWith(month.monthKey) || localDate.startsWith(month.monthKey);
-    });
+    const monthOrders = this.orders.filter(o =>
+      this.excelService.formatDate(o.createdAt).startsWith(month.monthKey)
+    );
     this.excelService.exportMonth(month, monthOrders);
   }
 
@@ -478,11 +472,9 @@ export class AdminReporteComponent implements OnInit {
   }
 
   exportHistoricalDay(): void {
-    const dayOrders = this.orders.filter((o) => {
-      const orderDateStr = (o.createdAt || '').toString().split('T')[0];
-      const localDate = this.excelService.formatDate(o.createdAt);
-      return orderDateStr === this.historyDate || localDate === this.historyDate;
-    });
+    const dayOrders = this.orders.filter(o =>
+      this.excelService.formatDate(o.createdAt) === this.historyDate
+    );
     this.excelService.exportDailyReport(
       this.historyDate,
       dayOrders,

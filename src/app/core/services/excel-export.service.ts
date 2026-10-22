@@ -38,6 +38,10 @@ export interface MonthlySummaryExport {
   providedIn: 'root'
 })
 export class ExcelExportService {
+  private readonly dateFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/La_Paz', year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+
   /**
    * Convierte de forma segura cualquier valor (string de base de datos o número) a float con 2 decimales
    */
@@ -47,31 +51,33 @@ export class ExcelExportService {
   }
 
   /**
-   * Formatea fecha a YYYY-MM-DD en hora local de manera consistente
+   * Formatea instantes a YYYY-MM-DD en Bolivia; conserva fechas sin hora.
    */
   public formatDate(dateVal: any): string {
     if (!dateVal) return '';
+    if (typeof dateVal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateVal)) return dateVal;
     try {
       const d = new Date(dateVal);
-      if (isNaN(d.getTime())) return String(dateVal).split('T')[0];
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      if (isNaN(d.getTime())) return '';
+      const parts = this.dateFormatter.formatToParts(d);
+      const year = parts.find(part => part.type === 'year')!.value;
+      const month = parts.find(part => part.type === 'month')!.value;
+      const day = parts.find(part => part.type === 'day')!.value;
       return `${year}-${month}-${day}`;
     } catch {
-      return String(dateVal).split('T')[0];
+      return '';
     }
   }
 
   /**
-   * Formatea hora a HH:mm en hora local
+   * Formatea hora a HH:mm en Bolivia.
    */
   public formatTime(dateVal: any): string {
     if (!dateVal) return '';
     try {
       const d = new Date(dateVal);
       if (isNaN(d.getTime())) return '';
-      return d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleTimeString('es-BO', { timeZone: 'America/La_Paz', hour: '2-digit', minute: '2-digit' });
     } catch {
       return '';
     }
