@@ -20,6 +20,7 @@ export interface Product {
 }
 
 export interface Vendor {
+  active?: boolean;
   id: string;
   name: string;
   phone: string;

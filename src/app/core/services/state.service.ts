@@ -95,22 +95,7 @@ export class StateService {
     this.loadClients();
     this.loadProducts();
     
-    // Load vendors and match the active logged-in vendor
-    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/users/vendors`).subscribe({
-      next: (dbVendors) => {
-        const mappedVendors = dbVendors.map(v => this.mapVendor(v));
-        this.vendorsSubject.next(mappedVendors);
-
-        // Match the logged-in user to their vendor profile
-        const matchingVendor = mappedVendors.find(v => v.usuario_id === this.authService.userId);
-        if (matchingVendor) {
-          this.activeVendorSubject.next(matchingVendor);
-        } else if (mappedVendors.length > 0) {
-          this.activeVendorSubject.next(mappedVendors[0]);
-        }
-      },
-      error: (err) => console.error('Error loading vendors', err)
-    });
+    this.loadVendors();
 
     const loadInitialOrders = () => {
       if (this.authService.userRole === 'vendedor') {
@@ -128,6 +113,18 @@ export class StateService {
         console.error('Error checking today closed status', err);
         loadInitialOrders();
       }
+    });
+  }
+
+  public loadVendors(): void {
+    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/users/vendors`).subscribe({
+      next: dbVendors => {
+        const vendors = dbVendors.map(v => this.mapVendor(v));
+        this.vendorsSubject.next(vendors);
+        const matchingVendor = vendors.find(v => v.usuario_id === this.authService.userId);
+        this.activeVendorSubject.next(matchingVendor ?? vendors[0] ?? null);
+      },
+      error: err => console.error('Error loading vendors', err)
     });
   }
 
@@ -244,6 +241,7 @@ export class StateService {
 
   private mapVendor(db: any): Vendor {
     return {
+      active: db.activo !== false,
       id: db.id,
       name: db.nombre,
       phone: db.telefono || '',

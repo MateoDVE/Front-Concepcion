@@ -58,7 +58,7 @@ export class AdminCrearPedidoComponent implements OnInit {
     this.stateService.clients$.subscribe(c => this.clients = c);
     this.stateService.products$.subscribe(p => this.products = p);
     this.stateService.vendors$.subscribe(v => {
-      this.vendors = v;
+      this.vendors = v.filter(vendor => vendor.active !== false);
       if (this.vendors.length > 0 && !this.selectedVendorId) {
         this.selectedVendorId = this.vendors[0].id;
       }
