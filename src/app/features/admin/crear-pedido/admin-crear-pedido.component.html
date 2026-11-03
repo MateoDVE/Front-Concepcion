@@ -107,6 +107,14 @@
       </button>
     </section>
 
+    <section class="form-section">
+      <label for="order-description" class="section-title text-label-lg">Descripción del pedido (opcional)</label>
+      <textarea id="order-description" [(ngModel)]="description" maxlength="1000" rows="3"
+                class="form-input w-full" aria-describedby="description-help"
+                placeholder="Ej.: Entregar en recepción y llamar al llegar."></textarea>
+      <span id="description-help" class="text-caption text-muted">{{ description.length }}/1000 caracteres</span>
+    </section>
+
     <!-- LOGISTICS Section -->
     <section class="logistics-grid mb-6">
       <!-- Vendor Assignment -->

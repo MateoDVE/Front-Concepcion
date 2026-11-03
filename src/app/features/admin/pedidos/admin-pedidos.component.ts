@@ -1,4 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { afterNextRender, Component, DestroyRef, ElementRef, inject, Injector, NgZone, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { compareRouteOrders, isActiveStop } from '../../../core/models/route-order';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
@@ -19,6 +21,34 @@ export class AdminPedidosComponent implements OnInit {
   private stateService = inject(StateService);
   private router = inject(Router);
 
+  private destroyRef = inject(DestroyRef);
+  private injector = inject(Injector);
+  private zone = inject(NgZone);
+  private pendingPositions = new Map<HTMLElement, number>();
+  private pendingAnimationRender?: ReturnType<typeof afterNextRender>;
+  @ViewChildren('routeStop') private routeStopElements?: QueryList<ElementRef<HTMLElement>>;
+  movedOrderId: string | null = null;
+  routeMovementMessage = '';
+  private highlightTimer?: ReturnType<typeof setTimeout>;
+  private stopAnimations = new Map<HTMLElement, Animation>();
+
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      clearTimeout(this.highlightTimer);
+      this.pendingAnimationRender?.destroy();
+      this.pendingPositions.clear();
+      this.stopAnimations.forEach(animation => animation.cancel());
+      this.stopAnimations.clear();
+    });
+  }
+
+  vendors$ = this.stateService.vendors$;
+  selectedRouteVendor = '';
+  routeOrders: Order[] = [];
+  savingRoute = false;
+  routeMessage = '';
+  private confirmedRouteIds: string[] = [];
+  private routeSaveInFlight = false;
   orders: Order[] = [];
   filteredOrders: Order[] = [];
   selectedOrder: Order | null = null;
@@ -44,10 +74,114 @@ export class AdminPedidosComponent implements OnInit {
 
   ngOnInit() {
     this.selectedDate = this.stateService.getLocalDateString();
-    this.stateService.orders$.subscribe(o => {
+    this.stateService.orders$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(o => {
       this.orders = o;
       this.applyFilterAndSearch();
     });
+  }
+
+  updateRouteOrders() {
+    if (this.savingRoute) return;
+    this.routeOrders = this.orders.filter(o => o.vendorId === this.selectedRouteVendor
+      && this.stateService.getLocalDateString(new Date(o.createdAt)) === this.selectedDate
+      && isActiveStop(o)).sort(compareRouteOrders);
+    this.confirmedRouteIds = this.routeOrders.map(o => o.id);
+  }
+
+  moveRouteOrder(index: number, direction: number) {
+    const target = index + direction;
+    if (index < 0 || index >= this.routeOrders.length || target < 0 || target >= this.routeOrders.length) return;
+    // Only the two swapped rows change layout; avoid measuring the entire route.
+    for (const position of [index, target]) {
+      const element = this.routeStopElements?.get(position)?.nativeElement;
+      if (element && !this.pendingPositions.has(element)) {
+        this.pendingPositions.set(element, element.getBoundingClientRect().top);
+      }
+    }
+    const movedOrder = this.routeOrders[index];
+    this.movedOrderId = movedOrder.id;
+    this.routeMovementMessage = `${movedOrder.clientName}: parada ${index + 1} → ${target + 1}.`;
+    clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => this.movedOrderId = null, 700);
+    const reordered = [...this.routeOrders];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    this.routeOrders = reordered;
+    if (this.pendingPositions.size && !this.pendingAnimationRender) {
+      this.pendingAnimationRender = afterNextRender(() => {
+        this.pendingAnimationRender = undefined;
+        const positions = this.pendingPositions;
+        this.pendingPositions = new Map();
+        this.zone.runOutsideAngular(() => this.animateRouteMovement(positions));
+      }, { injector: this.injector });
+    }
+    this.savingRoute = true;
+    this.routeMessage = 'Guardando orden… Puedes seguir organizando las paradas.';
+    this.saveRoute();
+  }
+
+  private animateRouteMovement(previousPositions: Map<HTMLElement, number>) {
+    // FLIP: animate from the previous visual position to the newly rendered layout.
+    // Capture all final positions before starting animations to avoid layout thrashing.
+    previousPositions.forEach((_top, element) => {
+      this.stopAnimations.get(element)?.cancel();
+      this.stopAnimations.delete(element);
+    });
+    const reducedMotion = this.routeStopElements?.first?.nativeElement.ownerDocument.defaultView
+      ?.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) return;
+    const movements = Array.from(previousPositions, ([element, top]) => ({
+      element, offset: top - element.getBoundingClientRect().top
+    }));
+    movements.forEach(({ element, offset }) => {
+      if (!element.isConnected || Math.abs(offset) < 1 || !element.animate) return;
+      const animation = element.animate([
+        { transform: `translateY(${offset}px)` },
+        { transform: 'translateY(0)' }
+      ], { duration: 150, easing: 'cubic-bezier(0.2, 0, 0.2, 1)' });
+      this.stopAnimations.set(element, animation);
+      animation.onfinish = () => {
+        if (this.stopAnimations.get(element) === animation) this.stopAnimations.delete(element);
+      };
+    });
+  }
+
+  private saveRoute() {
+    // Keep only the latest desired sequence while one request is in flight.
+    if (this.routeSaveInFlight) return;
+    const ids = this.routeOrders.map(o => o.id);
+    if (ids.every((id, index) => id === this.confirmedRouteIds[index])) {
+      this.savingRoute = false;
+      this.routeMessage = 'Orden guardado.';
+      return;
+    }
+    this.routeSaveInFlight = true;
+    this.stateService.reorderRoute(this.selectedRouteVendor, this.selectedDate, ids, this.confirmedRouteIds)
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: () => {
+          this.confirmedRouteIds = ids;
+          this.routeSaveInFlight = false;
+          this.saveRoute();
+        },
+        error: err => {
+          this.routeSaveInFlight = false;
+          this.savingRoute = false;
+          this.movedOrderId = null;
+          this.routeMovementMessage = '';
+          this.updateRouteOrders();
+          this.routeMessage = err.status === 409
+            ? 'La ruta cambió. Se descartaron los movimientos pendientes y se actualizará la lista.'
+            : 'No se pudo confirmar el guardado. Se descartaron los movimientos pendientes y se actualizará la lista.';
+          this.stateService.loadOrders();
+        }
+      });
+  }
+
+  trackRouteOrder(_index: number, order: Order): string {
+    return order.id;
+  }
+
+  refreshRoute() {
+    this.stateService.loadOrders();
   }
 
   onSearchChange() {
@@ -130,6 +264,7 @@ export class AdminPedidosComponent implements OnInit {
     // 4. Ordenar por fecha desc
     result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     this.filteredOrders = result;
+    this.updateRouteOrders();
   }
 
   getClientInitials(name: string): string {

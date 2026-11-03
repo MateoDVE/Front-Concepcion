@@ -425,3 +425,46 @@
     color: $color-outline-variant;
   }
 }
+
+.route-editor { display: grid; gap: 12px; }
+.route-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.route-toolbar select { padding: 10px; border: 1px solid #ccd5dc; border-radius: 8px; max-width: 100%; background: white; color: #243746; }
+.route-stop-list { list-style: none; padding: 0; margin: 0; }
+.route-stop { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #e1e7eb; }
+.route-position { font-weight: 700; min-width: 24px; text-align: center; }
+.route-stop-info { flex: 1; min-width: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.route-stop-info span, .route-stop-info small { color: #526575; }
+.route-stop-actions { display: flex; gap: 6px; }
+.route-stop-actions button { min-width: 44px; min-height: 44px; font-size: 20px; }
+.route-editor button:disabled { opacity: .45; cursor: not-allowed; }
+
+.order-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// Keep the moved stop visible while both rows slide to their new positions.
+.route-stop {
+  position: relative;
+  border-radius: 10px;
+  transition: background-color 100ms ease;
+}
+.route-stop--moved {
+  z-index: 1;
+  background-color: #e5f4ff;
+  box-shadow: inset 3px 0 0 #17669b;
+}
+.route-position {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  min-width: 32px;
+  height: 32px;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.route-stop--moved .route-position { background-color: #17669b; color: #fff; }
+.route-movement-message { font-weight: 600; color: #155783; }
+@media (prefers-reduced-motion: reduce) {
+  .route-stop, .route-position { transition: none; }
+}

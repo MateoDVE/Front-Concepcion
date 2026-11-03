@@ -71,9 +71,8 @@ export class StateService {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
-    this.initData();
 
-    // Re-load data if auth state changes
+    // Load data initially and re-load if auth state changes
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.initData();
@@ -113,13 +112,21 @@ export class StateService {
       error: (err) => console.error('Error loading vendors', err)
     });
 
+    const loadInitialOrders = () => {
+      if (this.authService.userRole === 'vendedor') {
+        this.loadTodayOrders();
+      } else {
+        this.loadOrders();
+      }
+    };
+
     this.checkTodayClosedStatus().subscribe({
       next: () => {
-        this.loadOrders();
+        loadInitialOrders();
       },
       error: (err) => {
         console.error('Error checking today closed status', err);
-        this.loadOrders();
+        loadInitialOrders();
       }
     });
   }
@@ -147,6 +154,59 @@ export class StateService {
       next: (res) => this.productsSubject.next(res.map(p => this.mapProduct(p))),
       error: (err) => console.error('Error loading products', err)
     });
+  }
+
+  reorderRoute(vendorId: string, date: string, orderIds: string[], previousOrderIds: string[]): Observable<void> {
+    return this.http.patch(`${APP_CONFIG.apiUrl}/orders/route-order`, {
+      vendedor_id: vendorId, fecha: date, order_ids: orderIds, previous_order_ids: previousOrderIds
+    }).pipe(
+      map(() => {
+        const positions = new Map(orderIds.map((id, index) => [id, index + 1]));
+        this.ordersSubject.next(this.ordersSubject.value.map(order => {
+          const position = positions.get(order.id);
+          return position === undefined ? order : { ...order, routeOrder: position };
+        }));
+      })
+    );
+  }
+
+  fetchOrders(): Observable<Order[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders`).pipe(
+      map(rows => rows.map(row => this.mapOrder(row)))
+    );
+  }
+
+  public loadTodayOrders(): void {
+    const todayStr = this.getLocalDateString();
+    const vendorId = this.authService.userRole === 'vendedor' ? this.activeVendorSubject.value?.id : undefined;
+    const params = new URLSearchParams({ fecha: todayStr });
+    if (vendorId) {
+      params.set('vendedor_id', vendorId);
+    }
+    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders?${params.toString()}`).subscribe({
+      next: (res) => {
+        const mappedToday = res.map(o => this.mapOrder(o));
+        const otherOrders = this.ordersSubject.value.filter(
+          o => this.getLocalDateString(new Date(o.createdAt)) !== todayStr
+            || (vendorId ? o.vendorId !== vendorId : false)
+        );
+        this.ordersSubject.next([...mappedToday, ...otherOrders]);
+      },
+      error: (err) => console.error('Error loading today orders', err)
+    });
+  }
+
+  private upsertOrderInState(dbOrder: any): void {
+    if (!dbOrder || !dbOrder.id) {
+      this.loadTodayOrders();
+      return;
+    }
+    const mapped = this.mapOrder(dbOrder);
+    const current = this.ordersSubject.value;
+    const exists = current.some(o => o.id === mapped.id);
+    this.ordersSubject.next(
+      exists ? current.map(o => (o.id === mapped.id ? mapped : o)) : [mapped, ...current]
+    );
   }
 
   public loadOrders(): void {
@@ -201,10 +261,13 @@ export class StateService {
       clientPhone: db.cliente?.telefono || this.clientsSubject.value.find(c => c.id === db.cliente_id)?.phone || undefined,
       clientLocationUrl: db.cliente?.ubicacion_url || (db.cliente?.direccion ? `https://maps.google.com/?q=${encodeURIComponent(db.cliente.direccion)}` : undefined),
       vendorId: db.vendedor_id,
+      routeOrder: db.orden_ruta ?? null,
+      clientAddress: db.cliente?.direccion,
       vendorName: db.vendedor?.nombre || null,
       status: db.estado as OrderStatus,
       createdAt: db.fecha_creacion || db.created_at,
       deliveredAt: db.fecha_entrega || null,
+      description: db.descripcion ?? null,
       paymentMethod: (db.metodo_pago as any) || null,
       total: Number(db.total),
       failedReason: db.motivo_falla || undefined,
@@ -312,6 +375,7 @@ export class StateService {
 
   createOrder(orderData: any): void {
     const body: any = {
+      descripcion: orderData.description,
       cliente_id: orderData.clientId,
       vendedor_id: orderData.vendorId || undefined,
       estado: orderData.status || undefined,
@@ -323,9 +387,11 @@ export class StateService {
       }))
     };
     this.http.post<any>(`${APP_CONFIG.apiUrl}/orders`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
+      next: (created) => {
+        this.upsertOrderInState(created);
+        if (body.estado === 'delivered') {
+          this.loadProducts();
+        }
       },
       error: (err) => console.error('Error creating order', err)
     });
@@ -339,6 +405,7 @@ export class StateService {
     // Actualización optimista local para respuesta visual instantánea
     const currentOrders = this.ordersSubject.value;
     const orderIndex = currentOrders.findIndex(o => o.id === orderId);
+    const previousStatus = orderIndex !== -1 ? currentOrders[orderIndex].status : undefined;
     if (orderIndex !== -1) {
       const updatedList = [...currentOrders];
       const target = updatedList[orderIndex];
@@ -358,19 +425,22 @@ export class StateService {
       metodo_pago: status === 'delivered' ? (extra?.paymentMethod || 'efectivo') : null
     };
     this.http.patch<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}/status`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
+      next: (updated) => {
+        this.upsertOrderInState(updated);
+        if (status === 'delivered' || previousStatus === 'delivered') {
+          this.loadProducts();
+        }
       },
       error: (err) => {
         console.error('Error updating order status', err);
-        this.loadOrders();
+        this.loadTodayOrders();
       }
     });
   }
 
   updateOrder(updatedOrder: Order): void {
     const body: any = {
+      descripcion: updatedOrder.description,
       cliente_id: updatedOrder.clientId,
       vendedor_id: updatedOrder.vendorId || null,
       estado: updatedOrder.status,
@@ -382,19 +452,21 @@ export class StateService {
       }))
     };
     this.http.put<any>(`${APP_CONFIG.apiUrl}/orders/${updatedOrder.id}`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
+      next: (updated) => {
+        this.upsertOrderInState(updated);
       },
       error: (err) => console.error('Error updating order', err)
     });
   }
 
   deleteOrder(orderId: string): void {
+    const targetOrder = this.ordersSubject.value.find(o => o.id === orderId);
     this.http.delete<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}`).subscribe({
       next: () => {
-        this.loadOrders();
-        this.loadProducts();
+        this.ordersSubject.next(this.ordersSubject.value.filter(o => o.id !== orderId));
+        if (targetOrder?.status === 'delivered') {
+          this.loadProducts();
+        }
       },
       error: (err) => console.error('Error deleting order', err)
     });
@@ -474,9 +546,9 @@ export class StateService {
   }
 
   getLocalDateString(date: Date = new Date()): string {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 10);
-    return localISOTime;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/La_Paz', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(date);
   }
 
   // ---- Price rule helper ----

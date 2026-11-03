@@ -290,3 +290,8 @@
     color: $color-outline-variant;
   }
 }
+
+.order-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

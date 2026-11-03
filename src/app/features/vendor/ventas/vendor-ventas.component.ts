@@ -42,6 +42,7 @@ export class VendorVentasComponent implements OnInit {
   editClientLocationUrl = '';
 
   // Form Fields for Direct Sale
+  description = '';
   selectedClientId = '';
   selectedProductId = '';
   productQuantity = 1;
@@ -210,6 +211,10 @@ export class VendorVentasComponent implements OnInit {
   }
 
   submitDirectSale(status: 'pending' | 'delivered') {
+    if (this.description.length > 1000) {
+      this.openFeedbackModal('Descripción demasiado larga', 'La descripción admite hasta 1.000 caracteres.', 'warning');
+      return;
+    }
     if (!this.selectedClientId) {
       this.openFeedbackModal('Cliente requerido', 'Por favor seleccione un cliente.', 'warning');
       return;
@@ -224,6 +229,7 @@ export class VendorVentasComponent implements OnInit {
     }
 
     const orderData = {
+      description: this.description.trim() || null,
       clientId: this.selectedClientId,
       vendorId: this.activeVendor.id,
       status: status,
@@ -243,6 +249,7 @@ export class VendorVentasComponent implements OnInit {
       : 'Pedido directo registrado con éxito como pendiente.';
 
     this.openFeedbackModal(messageTitle, messageContent, 'success', () => {
+      this.description = '';
       this.selectedClientId = '';
       this.clientSearchQuery = '';
       this.selectedProductId = '';

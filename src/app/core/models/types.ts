@@ -40,11 +40,14 @@ export type PaymentMethod = 'efectivo' | 'qr';
 export interface Order {
   id: string;
   code?: string;
+  description?: string | null;
   clientId: string;
   clientName: string;
   clientPhone?: string;
   clientLocationUrl?: string;
   vendorId: string | null;
+  routeOrder?: number | null;
+  clientAddress?: string;
   vendorName: string | null;
   status: OrderStatus;
   createdAt: string; // ISO string or timestamp

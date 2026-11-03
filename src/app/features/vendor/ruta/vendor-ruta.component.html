@@ -5,6 +5,9 @@
     <p class="text-muted text-body-sm">Tu ruta de hoy: {{ totalRouteCount - completedRouteCount }} entregas restantes</p>
   </div>
 
+  <p class="text-caption text-muted mb-4">Secuencia definida por administración. Se actualiza cada 10 segundos.</p>
+  <button class="btn btn--outline mb-4" (click)="refreshRoute()">Actualizar ruta</button>
+
   <!-- Progress Card -->
   <section class="progress-card mb-6">
     <div class="progress-header flex justify-between items-center text-caption font-bold text-primary">
@@ -32,7 +35,7 @@
     </div>
 
     <!-- Stop Card -->
-    <div *ngFor="let order of vendorOrders; trackBy: trackByOrderId" 
+    <div *ngFor="let order of vendorOrders; let i = index; trackBy: trackByOrderId"
          (click)="toggleExpand(order.id)" 
          class="stop-card animate-slide-up"
          [class.stop-card--active]="order.status === 'route'"
@@ -45,7 +48,7 @@
           <span class="state-dot" [ngClass]="order.status"></span>
           <div class="client-meta">
             <h4 class="client-name font-bold text-body-md">{{ order.clientName }}</h4>
-            <span class="order-id text-caption text-muted">{{ order.code }}</span>
+            <span class="order-id text-caption text-muted">{{ order.code }}<span *ngIf="order.status !== 'delivered' && order.status !== 'failed'"> · Parada {{ i + 1 }}</span></span>
           </div>
         </div>
         <div class="right-total text-right flex items-center gap-2">
@@ -59,6 +62,8 @@
           <span class="total-amount font-bold text-body-md text-primary">{{ formatCurrency(order.total) }}</span>
         </div>
       </div>
+
+      <p *ngIf="order.description" class="order-description text-body-sm mt-3"><strong>Descripción: </strong>{{ order.description }}</p>
 
       <!-- Collapsible items & address detail -->
       <div class="stop-card-details pt-3 border-t mt-3 space-y-2 animate-fade-in" *ngIf="isExpanded(order.id)">

@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Product } from '../../../core/models/types';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
@@ -367,20 +368,35 @@ export class AdminReporteComponent implements OnInit {
   // --- Logic for Tab 3 (Monthly) ---
   fetchMonthlyReport() {
     this.monthlyLoading = true;
-    this.stateService.getHistoryReport().subscribe({
-      next: (data) => {
-        this.monthlyRecords = data;
-        this.groupHistoryByMonth(data);
+    this.monthlySummaries = [];
+    forkJoin({
+      history: this.stateService.getHistoryReport(),
+      orders: this.stateService.fetchOrders()
+    }).subscribe({
+      next: ({ history, orders }) => {
+        this.monthlyRecords = history;
+        this.orders = orders;
+        this.groupHistoryByMonth(history, orders);
         this.monthlyLoading = false;
       },
       error: (err) => {
         console.error('Error fetching history report', err);
+        this.openFeedbackModal('No se pudo cargar el reporte', 'No fue posible consultar los pedidos actuales. Vuelve a abrir el reporte mensual para reintentar.', 'error');
         this.monthlyLoading = false;
       }
     });
   }
 
-  groupHistoryByMonth(records: any[]) {
+  groupHistoryByMonth(records: any[], currentOrders?: Order[]) {
+    const currentTotals = new Map<string, { total: number; delivered: number; failed: number }>();
+    currentOrders?.forEach(order => {
+      const month = this.getLocalDateString(new Date(order.createdAt)).slice(0, 7);
+      const totals = currentTotals.get(month) ?? { total: 0, delivered: 0, failed: 0 };
+      totals.total++;
+      if (order.status === 'delivered') totals.delivered++;
+      if (order.status === 'failed') totals.failed++;
+      currentTotals.set(month, totals);
+    });
     const monthsMap = new Map<string, any[]>();
     
     records.forEach(rec => {
@@ -404,15 +420,17 @@ export class AdminReporteComponent implements OnInit {
       const monthName = `${monthNames[monthIdx]} ${year}`;
 
       const daysCount = monthRecords.length;
-      const totalOrders = monthRecords.reduce((sum, r) => sum + r.total_pedidos, 0);
-      const totalDelivered = monthRecords.reduce((sum, r) => sum + r.total_entregados, 0);
-      const totalFailed = monthRecords.reduce((sum, r) => sum + r.total_fallidos, 0);
+      // A fresh orders snapshot also supports servers without the new summary fields.
+      const actual = currentTotals.get(monthKey) ?? { total: 0, delivered: 0, failed: 0 };
+      const totalOrders = currentOrders !== undefined ? actual.total : Number(monthRecords[0].pedidos_actuales_mes);
+      const totalDelivered = currentOrders !== undefined ? actual.delivered : Number(monthRecords[0].entregados_actuales_mes);
+      const totalFailed = currentOrders !== undefined ? actual.failed : Number(monthRecords[0].fallidos_actuales_mes);
       const totalSistema = monthRecords.reduce((sum, r) => sum + Number(r.total_ventas_sistema), 0);
       const totalRecaudado = monthRecords.reduce((sum, r) => sum + Number(r.total_ventas_recaudado), 0);
       const totalDiferencia = monthRecords.reduce((sum, r) => sum + Number(r.total_diferencias), 0);
       
       const efficiencyRate = totalOrders > 0
-        ? Math.round((totalDelivered / totalOrders) * 100)
+        ? Math.round((totalDelivered / totalOrders) * 10000) / 100
         : 0;
 
       summaries.push({

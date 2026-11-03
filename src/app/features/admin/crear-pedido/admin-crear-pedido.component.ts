@@ -41,6 +41,7 @@ export class AdminCrearPedidoComponent implements OnInit {
   orderItems: OrderFormItem[] = [];
   selectedVendorId = '';
   deliveryDate = '';
+  description = '';
   orderTotal = 0;
 
   // Edit / Reopen State
@@ -101,6 +102,7 @@ export class AdminCrearPedidoComponent implements OnInit {
       });
 
       this.selectedVendorId = order.vendorId || '';
+      this.description = order.description || '';
       
       if (reopen) {
         this.isReopening = true;
@@ -234,6 +236,10 @@ export class AdminCrearPedidoComponent implements OnInit {
 
   // ---- Save Form ----
   saveOrder() {
+    if (this.description.length > 1000) {
+      this.openFeedbackModal('Descripción demasiado larga', 'La descripción admite hasta 1.000 caracteres.', 'warning');
+      return;
+    }
     if (!this.selectedClient) {
       this.openFeedbackModal('Cliente requerido', 'Por favor selecciona un cliente.', 'warning');
       return;
@@ -260,6 +266,7 @@ export class AdminCrearPedidoComponent implements OnInit {
     const assignedVendor = this.vendors.find(v => v.id === this.selectedVendorId);
 
     const orderData = {
+      description: this.description.trim() || null,
       clientId: this.selectedClient.id,
       clientName: this.selectedClient.name,
       vendorId: assignedVendor ? assignedVendor.id : null,

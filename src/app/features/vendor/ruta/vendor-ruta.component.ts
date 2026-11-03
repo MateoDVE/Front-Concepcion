@@ -1,9 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, PLATFORM_ID, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest, interval } from 'rxjs';
+import { compareRouteOrders } from '../../../core/models/route-order';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Vendor, OrderStatus } from '../../../core/models/types';
 import { FormsModule } from '@angular/forms';
-import { map } from 'rxjs/operators';
+
 
 @Component({
   selector: 'app-vendor-ruta',
@@ -36,75 +39,32 @@ export class VendorRutaComponent implements OnInit {
   // Track expanded cards
   expandedOrderIds = new Set<string>();
 
-  ngOnInit() {
-    this.stateService.activeVendor$.subscribe(av => {
-      this.activeVendor = av;
-      this.loadVendorOrders();
-    });
+  private destroyRef = inject(DestroyRef);
+  private platformId = inject(PLATFORM_ID);
 
-    // Also watch today's orders list for updates
-    this.stateService.todayOrders$.subscribe(() => {
-      this.loadVendorOrders();
-    });
+  ngOnInit() {
+    combineLatest([this.stateService.activeVendor$, this.stateService.todayOrders$])
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([vendor, orders]) => {
+        this.activeVendor = vendor;
+        this.vendorOrders = vendor ? orders.filter(o => o.vendorId === vendor.id).sort(compareRouteOrders) : [];
+        this.calculateProgress();
+      });
+    if (isPlatformBrowser(this.platformId)) {
+      this.stateService.loadTodayOrders();
+      interval(30000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+        if (typeof document === 'undefined' || !document.hidden) {
+          this.stateService.loadTodayOrders();
+        }
+      });
+    }
   }
 
-  loadVendorOrders() {
-    if (!this.activeVendor) return;
-
-    this.stateService.todayOrders$.pipe(
-      map(orders => orders.filter(o => o.vendorId === this.activeVendor?.id))
-    ).subscribe(orders => {
-      this.vendorOrders = this.sortOrders(orders);
-      this.calculateProgress();
-    });
+  refreshRoute() {
+    this.stateService.loadTodayOrders();
   }
 
   trackByOrderId(_index: number, order: Order): string {
     return order.id;
-  }
-
-  /**
-   * Ordena los pedidos para que los entregados pasen automáticamente abajo.
-   * Prioridad:
-   * 1. route (entrega activa en curso)
-   * 2. loaded (cargado en vehículo)
-   * 3. pending (pendiente de carga)
-   * 4. failed (falla registrada)
-   * 5. delivered (entregado - al fondo)
-   */
-  private sortOrders(orders: Order[]): Order[] {
-    const statusPriority: Record<OrderStatus, number> = {
-      route: 0,
-      loaded: 1,
-      pending: 2,
-      failed: 3,
-      delivered: 4
-    };
-
-    return [...orders].sort((a, b) => {
-      const pA = statusPriority[a.status] ?? 99;
-      const pB = statusPriority[b.status] ?? 99;
-
-      if (pA !== pB) {
-        return pA - pB;
-      }
-
-      // Si ambos están entregados, mantener el orden en que se entregaron
-      if (a.status === 'delivered' && b.status === 'delivered') {
-        const timeA = a.deliveredAt ? new Date(a.deliveredAt).getTime() : new Date(a.createdAt).getTime();
-        const timeB = b.deliveredAt ? new Date(b.deliveredAt).getTime() : new Date(b.createdAt).getTime();
-        return timeA - timeB;
-      }
-
-      // Para los demás estados, preservar orden secuencial de ruta
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      if (dateA !== dateB) {
-        return dateA - dateB;
-      }
-
-      return (a.code || a.id).localeCompare(b.code || b.id);
-    });
   }
 
   calculateProgress() {
