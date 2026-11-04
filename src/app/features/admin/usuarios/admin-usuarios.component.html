@@ -2,11 +2,15 @@
   <header class="page-heading">
     <h1>Usuarios</h1>
     <p>Crea cuentas para vendedores y personal de almacén.</p>
+    <nav class="users-shortcuts" aria-label="Secciones de usuarios">
+      <a href="#registered-team">Ver equipo</a>
+      <a href="#new-account">Crear una cuenta</a>
+    </nav>
   </header>
 
   <div class="users-layout">
-    <section class="user-form" aria-labelledby="create-heading">
-      <h2 id="create-heading">Crear usuario</h2>
+    <section id="new-account" tabindex="-1" class="user-form" aria-labelledby="create-heading">
+      <h2 id="create-heading">Nueva cuenta</h2>
       <p class="hint">Todos los campos son obligatorios, excepto el teléfono.</p>
       <p *ngIf="success" class="message success" role="status">{{ success }}</p>
       <p *ngIf="error" class="message error" role="alert">{{ error }}</p>
@@ -52,22 +56,39 @@
       </form>
     </section>
 
-    <section class="users-list" aria-labelledby="list-heading" [attr.aria-busy]="loading">
+    <section id="registered-team" tabindex="-1" class="users-list" aria-labelledby="list-heading" [attr.aria-busy]="loading">
       <h2 id="list-heading">Equipo registrado</h2>
       <p class="hint">Vendedores y personal de almacén con cuenta en el sistema.</p>
+      <div class="team-filters">
+        <div class="field search-field">
+          <label for="team-search">Buscar usuario</label>
+          <input id="team-search" type="search" [(ngModel)]="search" placeholder="Nombre o usuario" autocomplete="off" />
+        </div>
+        <div class="field"><label for="team-role">Rol</label>
+          <select id="team-role" [(ngModel)]="roleFilter"><option value="">Todos</option><option value="vendedor">Vendedor</option><option value="almacen">Almacén</option></select>
+        </div>
+        <div class="field"><label for="team-status">Estado</label>
+          <select id="team-status" [(ngModel)]="statusFilter"><option value="">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select>
+        </div>
+      </div>
       <p class="message success" *ngIf="statusMessage" role="status">{{ statusMessage }}</p>
       <p *ngIf="loading" role="status">Cargando usuarios…</p>
       <div *ngIf="loadError" role="alert" class="message error">
         <p>{{ loadError }}</p><button type="button" class="secondary" (click)="load()">Reintentar</button>
       </div>
       <ng-container *ngIf="!loading && !loadError">
+        <p class="results-count" role="status">{{ filteredUsers.length }} de {{ users.length }} usuarios</p>
         <p *ngIf="!users.length" class="empty-state">Aún no hay usuarios de estos tipos. Crea la primera cuenta con el formulario.</p>
+        <div *ngIf="users.length && !filteredUsers.length" class="empty-state">
+          <p>No hay usuarios que coincidan con tu búsqueda.</p>
+          <button type="button" class="secondary" (click)="clearFilters()">Limpiar filtros</button>
+        </div>
         <ul>
-          <li *ngFor="let user of users">
+          <li *ngFor="let user of filteredUsers">
             <div class="user-info"><h3>{{ user.nombre }}</h3><p>{{ user.usuario }}</p></div>
             <div class="user-state">
               <span class="role">{{ user.rol === 'vendedor' ? 'Vendedor' : 'Almacén' }}</span>
-              <small>{{ user.activo ? 'Activo' : 'Inactivo' }}</small>
+              <small class="account-status" [class.inactive]="!user.activo">{{ user.activo ? 'Activo' : 'Inactivo' }}</small>
               <button type="button" class="secondary" [disabled]="updatingStatus" (click)="requestStatusChange(user)" [attr.aria-label]="(user.activo ? 'Desactivar a ' : 'Activar a ') + user.nombre">{{ user.activo ? 'Desactivar' : 'Activar' }}</button>
             </div>
             <div *ngIf="pendingStatus?.id === user.id" class="status-confirm" role="group" [attr.aria-label]="'Confirmar cambio de estado de ' + user.nombre">

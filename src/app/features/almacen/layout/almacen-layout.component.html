@@ -1,6 +1,7 @@
+<a class="skip-link" href="#main-content">Saltar al contenido</a>
 <div class="app-layout">
   <!-- Desktop Sidebar & Mobile Drawer -->
-  <aside class="app-sidebar" [class.open]="isMobileSidebarOpen">
+  <aside id="main-navigation" class="app-sidebar" [class.open]="isMobileSidebarOpen" appNavigationDrawer [drawerOpen]="isMobileSidebarOpen" (drawerDismiss)="closeMobileSidebar()" aria-label="Menú principal">
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8,13 +9,14 @@
         </svg>
       </div>
       <span class="sidebar-logo-text">Concepción</span>
+      <button type="button" class="drawer-close" (click)="closeMobileSidebar()" aria-label="Cerrar menú"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/almacen/inventario" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/almacen/inventario" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">inventory_2</span> Inventario
       </a>
-      <a routerLink="/almacen/reporte" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/almacen/reporte" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">analytics</span> Reporte Producción
       </a>
 
@@ -42,7 +44,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <button class="header-btn" (click)="toggleMobileSidebar()" aria-label="Menu">
+        <button class="header-btn" (click)="toggleMobileSidebar()" aria-label="Abrir menú" aria-controls="main-navigation" [attr.aria-expanded]="isMobileSidebarOpen">
           <span class="material-symbols-outlined">menu</span>
         </button>
         <span class="header-title font-bold text-headline-md">Distribuidora Concepción</span>
@@ -59,18 +61,19 @@
     </header>
 
     <!-- Main Content Outlet -->
-    <main class="app-main">
-      <router-outlet></router-outlet>
+    <main id="main-content" tabindex="-1" class="app-main">
+      <app-data-status></app-data-status>
+    <router-outlet></router-outlet>
     </main>
   </div>
 
   <!-- Bottom Navigation (Mobile Viewports) -->
   <nav class="app-bottom-nav">
-    <a routerLink="/almacen/inventario" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/almacen/inventario" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">inventory_2</span>
       <span>Inventario</span>
     </a>
-    <a routerLink="/almacen/reporte" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/almacen/reporte" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">analytics</span>
       <span>Reporte</span>
     </a>

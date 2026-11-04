@@ -1,8 +1,9 @@
 <div class="container animate-fade-in">
   <!-- Page Header -->
   <div class="page-header mb-6">
-    <h2 class="text-headline-xl text-primary">Resumen Operativo</h2>
-    <p class="text-muted text-body-md">Visión general del flujo logístico en tiempo real.</p>
+    <h1 class="text-headline-xl text-primary">Resumen operativo</h1>
+    <p class="text-muted text-body-md">Pedidos, entregas y recaudación de la jornada.</p>
+    <a routerLink="/admin/crear-pedido" class="btn btn--primary dashboard-create"><span class="material-symbols-outlined" aria-hidden="true">add</span> Crear pedido</a>
   </div>
 
   <!-- Metrics Bento Grid -->
@@ -70,7 +71,7 @@
         <a routerLink="/admin/crear-pedido" class="btn btn--primary mt-4">Crear Primer Pedido</a>
       </div>
 
-      <div *ngFor="let order of recentOrders" (click)="showOrderDetail(order)" class="order-item">
+      <div *ngFor="let order of recentOrders" (click)="showOrderDetail(order)" (keydown.enter)="showOrderDetail(order)" (keydown.space)="$event.preventDefault(); showOrderDetail(order)" role="button" tabindex="0" class="order-item" [attr.aria-label]="'Ver pedido ' + order.code + ' de ' + order.clientName">
         <div class="order-left">
           <div class="order-avatar">{{ getClientInitials(order.clientName) }}</div>
           <div class="order-info">
@@ -96,16 +97,11 @@
     </div>
   </section>
 
-  <!-- FAB floating action button -->
-  <a routerLink="/admin/crear-pedido" class="fab shadow-lg" aria-label="Crear pedido">
-    <span class="material-symbols-outlined">add</span>
-  </a>
-
   <!-- Order Detail Modal -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="selectedOrder">
     <div class="modal-backdrop-overlay" (click)="closeModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.code }}</h3>
         <button class="modal-close-btn" (click)="closeModal()">
@@ -190,7 +186,7 @@
       <div class="modal-footer mt-6 flex gap-4">
         <button class="btn btn--outline flex-1" (click)="closeModal()">Cerrar</button>
         
-        <button *ngIf="selectedOrder.status === 'pending'" class="btn btn--primary flex-[1.5]" (click)="editOrder(selectedOrder.id)">
+        <button *ngIf="['pending', 'loaded', 'route'].includes(selectedOrder.status)" class="btn btn--primary flex-[1.5]" (click)="editOrder(selectedOrder.id)">
           <span class="material-symbols-outlined">edit</span> Editar Pedido
         </button>
 

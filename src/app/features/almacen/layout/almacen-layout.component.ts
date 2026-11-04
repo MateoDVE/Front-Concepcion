@@ -1,3 +1,5 @@
+import { DataStatusComponent } from '../../../core/components/data-status/data-status.component';
+import { NavigationDrawerDirective } from '../../../shared/directives/navigation-drawer.directive';
 import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -5,7 +7,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-almacen-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [DataStatusComponent, RouterOutlet, RouterLink, RouterLinkActive, CommonModule, NavigationDrawerDirective],
   templateUrl: './almacen-layout.component.html',
   styleUrl: './almacen-layout.component.scss',
   standalone: true

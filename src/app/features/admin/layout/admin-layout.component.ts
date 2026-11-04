@@ -1,3 +1,5 @@
+import { DataStatusComponent } from '../../../core/components/data-status/data-status.component';
+import { NavigationDrawerDirective } from '../../../shared/directives/navigation-drawer.directive';
 import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
@@ -6,7 +8,7 @@ import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-admin-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [DataStatusComponent, RouterOutlet, RouterLink, RouterLinkActive, CommonModule, NavigationDrawerDirective],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss',
   standalone: true

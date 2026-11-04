@@ -25,6 +25,18 @@ export class AdminUsuariosComponent implements OnInit {
   updatingStatus = false;
   statusError = '';
   statusMessage = '';
+  search = '';
+  roleFilter = '';
+  statusFilter = '';
+  get filteredUsers() {
+    const query = this.search.trim().toLocaleLowerCase('es');
+    return this.users.filter(user =>
+      (!query || `${user.nombre} ${user.usuario}`.toLocaleLowerCase('es').includes(query)) &&
+      (!this.roleFilter || user.rol === this.roleFilter) &&
+      (!this.statusFilter || user.activo === (this.statusFilter === 'active')));
+  }
+
+  clearFilters() { this.search = ''; this.roleFilter = ''; this.statusFilter = ''; }
   model: CreateStaff = this.emptyModel();
 
   ngOnInit() { this.load(); }

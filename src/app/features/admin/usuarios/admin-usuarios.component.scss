@@ -2,12 +2,23 @@
 
 :host { display: block; }
 .users-page { max-width: 1200px; margin: 0 auto; padding: 0 v.$space-6 v.$space-8; }
-h1 { color: v.$color-primary; font-size: v.$text-headline-xl; margin: 0 0 v.$space-2; }
+h1 { color: v.$color-primary; font-size: 1.75rem; margin: 0 0 v.$space-2; }
 h2 { font-size: v.$text-headline-md; margin: 0 0 v.$space-2; }
 .page-heading { margin-bottom: v.$space-6; }
+.users-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.users-shortcuts a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border: 1px solid v.$color-outline-variant; border-radius: 8px; font-size: 14px; font-weight: 600; background: white; }
+.user-form, .users-list { scroll-margin-top: 88px; }
 .page-heading p, .hint, small, .user-info p { color: v.$color-on-surface-variant; }
 .hint { margin: 0 0 v.$space-6; font-size: v.$text-body-sm; }
-.users-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: v.$space-6; align-items: start; }
+.users-layout { display: grid; grid-template-columns: minmax(300px, .85fr) minmax(0, 1.15fr); gap: v.$space-6; align-items: start; }
+.team-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.team-filters .field { margin: 0; }
+.search-field { grid-column: 1 / -1; }
+.results-count { color: v.$color-on-surface-variant; font-size: 13px; padding-bottom: 12px; border-bottom: 1px solid v.$color-outline-variant; }
+.account-status { display: inline-flex; align-items: center; gap: 6px; }
+.account-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: v.$color-secondary; }
+.account-status.inactive::before { background: v.$color-outline; }
+.empty-state button { margin-top: 12px; }
 .user-form, .users-list { background: v.$color-surface-container-lowest; border: 1px solid v.$color-outline-variant; border-radius: v.$radius-default; padding: v.$space-6; min-width: 0; }
 fieldset { padding: 0; border: 0; margin: 0; min-width: 0; }
 .field { display: flex; flex-direction: column; gap: v.$space-2; margin-bottom: v.$space-5; }

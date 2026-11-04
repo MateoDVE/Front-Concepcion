@@ -1,0 +1,41 @@
+@use 'variables' as v;
+
+// Shared refinements for the three operational shells; branding stays in the existing tokens.
+@mixin refinements {
+  .app-layout { min-height: 100dvh; }
+  .app-content-wrapper, .header-left { min-width: 0; }
+  .app-header {
+    background: v.$color-surface-container-lowest;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    box-shadow: none; border-bottom: 1px solid v.$color-outline-variant;
+    .header-left { flex: 1; }
+    .header-title { font-size: 1rem; line-height: 1.35; }
+    .header-btn { width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px; }
+    .header-avatar { background: v.$color-primary; flex-shrink: 0; }
+  }
+  .app-sidebar {
+    max-width: min(300px, calc(100vw - 48px));
+    overscroll-behavior: contain;
+    .sidebar-logo-icon { background: v.$color-primary; border-radius: 12px; }
+    .sidebar-link { border-radius: 10px; min-height: 46px; transition: background 150ms, color 150ms; }
+    .sidebar-link.active { background: #eaf1fa; }
+    .sidebar-nav { min-height: 0; overscroll-behavior: contain; }
+    .sidebar-logo, .sidebar-user { flex-shrink: 0; }
+    .drawer-close { margin-left: auto; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; }
+  }
+  .app-bottom-nav {
+    background: white; backdrop-filter: none; -webkit-backdrop-filter: none;
+    border-radius: 18px; border: 1px solid v.$color-outline-variant;
+    box-shadow: 0 4px 16px rgb(0 25 60 / 8%);
+    .bottom-nav-item { min-width: 0; font-size: 12px; border-radius: 10px; }
+    .bottom-nav-item.active .material-symbols-outlined { transform: none; }
+  }
+  @media (max-width: 640px) {
+    .app-header { padding-inline: 12px; gap: 8px; .header-left { gap: 8px; } }
+    .app-bottom-nav { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  }
+  @media (min-width: 1024px) {
+    .app-sidebar .drawer-close { display: none; }
+    .app-main { padding-top: calc(#{v.$header-height} + 28px + env(safe-area-inset-top, 0px)); }
+  }
+}
