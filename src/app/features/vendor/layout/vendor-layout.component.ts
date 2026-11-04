@@ -1,4 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DataStatusComponent } from '../../../core/components/data-status/data-status.component';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,12 +9,13 @@ import { Vendor } from '../../../core/models/types';
 
 @Component({
   selector: 'app-vendor-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [DataStatusComponent, RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   templateUrl: './vendor-layout.component.html',
   styleUrl: './vendor-layout.component.scss',
   standalone: true
 })
 export class VendorLayoutComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   stateService = inject(StateService);
   private router = inject(Router);
   private authService = inject(AuthService);
@@ -21,7 +24,7 @@ export class VendorLayoutComponent implements OnInit {
   showVendorSelector = false;
 
   ngOnInit() {
-    this.stateService.activeVendor$.subscribe(av => this.activeVendor = av);
+    this.stateService.activeVendor$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(av => this.activeVendor = av);
   }
 
   toggleSelector() {

@@ -1,9 +1,13 @@
 <div class="container animate-fade-in">
+  <p *ngIf="actionError" role="alert" class="data-status data-status--error">{{ actionError }}</p>
   <!-- Greeting -->
   <div class="page-greeting mb-4">
     <h2 class="text-headline-lg font-bold text-primary">Hola, {{ activeVendor?.name }}</h2>
     <p class="text-muted text-body-sm">Tu ruta de hoy: {{ totalRouteCount - completedRouteCount }} entregas restantes</p>
   </div>
+
+  <p class="text-caption text-muted mb-4">Secuencia definida por administración. Se actualiza cada 10 segundos.</p>
+  <button class="btn btn--outline mb-4" (click)="refreshRoute()">Actualizar ruta</button>
 
   <!-- Progress Card -->
   <section class="progress-card mb-6">
@@ -16,9 +20,6 @@
     </div>
     <div class="progress-footer flex justify-between text-caption text-muted">
       <span>{{ completedRouteCount }} de {{ totalRouteCount }} entregados</span>
-      <span class="flex items-center gap-1">
-        <span class="material-symbols-outlined text-[14px]">schedule</span> 1h 30m aprox.
-      </span>
     </div>
   </section>
 
@@ -32,27 +33,27 @@
     </div>
 
     <!-- Stop Card -->
-    <div *ngFor="let order of vendorOrders; trackBy: trackByOrderId" 
-         (click)="toggleExpand(order.id)" 
+    <div *ngFor="let order of vendorOrders; let i = index; trackBy: trackByOrderId"
+
          class="stop-card animate-slide-up"
          [class.stop-card--active]="order.status === 'route'"
          [class.stop-card--completed]="order.status === 'delivered' || order.status === 'failed'">
-      
+
       <!-- Top header line of card -->
       <div class="stop-card-header">
         <div class="left-info">
           <!-- Small dot badge -->
-          <span class="state-dot" [ngClass]="order.status"></span>
+          <span class="badge" [ngClass]="'badge--' + order.status">{{ getStatusLabel(order.status) }}</span>
           <div class="client-meta">
             <h4 class="client-name font-bold text-body-md">{{ order.clientName }}</h4>
-            <span class="order-id text-caption text-muted">{{ order.code }}</span>
+            <span class="order-id text-caption text-muted">{{ order.code }}<span *ngIf="order.status !== 'delivered' && order.status !== 'failed'"> · Parada {{ i + 1 }}</span></span>
           </div>
         </div>
         <div class="right-total text-right flex items-center gap-2">
-          <button *ngIf="order.clientPhone || getClientPhone(order)" 
-                  (click)="callClient(order, $event)" 
-                  class="btn-call-quick" 
-                  title="Llamar a {{ order.clientName }}" 
+          <button *ngIf="order.clientPhone || getClientPhone(order)"
+                  (click)="callClient(order, $event)"
+                  class="btn-call-quick"
+                  title="Llamar a {{ order.clientName }}"
                   aria-label="Llamar al cliente">
             <span class="material-symbols-outlined text-[18px]">call</span>
           </button>
@@ -60,11 +61,16 @@
         </div>
       </div>
 
+      <p *ngIf="order.description" class="order-description text-body-sm mt-3"><strong>Descripción: </strong>{{ order.description }}</p>
+
+      <p class="text-body-sm mt-3">{{ getAddress(order) }}</p>
+      <button type="button" class="btn btn--outline mt-3" [attr.aria-expanded]="isExpanded(order.id)" (click)="toggleExpand(order.id)">{{ isExpanded(order.id) ? 'Ocultar detalle' : 'Ver productos' }}</button>
+      <p *ngIf="pendingOrders.has(order.id)" role="status">Guardando cambio…</p>
       <!-- Collapsible items & address detail -->
       <div class="stop-card-details pt-3 border-t mt-3 space-y-2 animate-fade-in" *ngIf="isExpanded(order.id)">
         <p class="address text-body-sm text-muted">
           <span class="material-symbols-outlined text-sm">location_on</span>
-          {{ order.clientName }} • {{ order.code }}
+          {{ getAddress(order) }}
         </p>
 
         <div class="client-phone flex items-center justify-between text-body-sm pt-1" *ngIf="order.clientPhone || getClientPhone(order)">
@@ -72,12 +78,12 @@
             <span class="material-symbols-outlined text-sm">call</span>
             {{ order.clientPhone || getClientPhone(order) }}
           </span>
-          <button (click)="callClient(order, $event)" 
+          <button (click)="callClient(order, $event)"
                   class="btn btn--outline btn--sm py-1 px-3 text-xs flex items-center gap-1">
             <span class="material-symbols-outlined text-xs">call</span> Llamar
           </button>
         </div>
-        
+
         <div class="products-list pt-2 border-t">
           <span class="text-caption text-muted uppercase block mb-1">Productos</span>
           <div *ngFor="let item of order.items" class="product-item flex justify-between text-body-sm">
@@ -92,19 +98,19 @@
       </div>
 
       <!-- Contextual Action row (does not bubble click to trigger expansion) -->
-      <div class="stop-card-actions pt-3 border-t mt-3 flex gap-3" (click)="$event.stopPropagation()">
+      <div [attr.inert]="pendingOrders.has(order.id) ? '' : null" class="stop-card-actions pt-3 border-t mt-3 flex gap-3" (click)="$event.stopPropagation()">
         <!-- Pendiente Action: Cargar & Llamar -->
         <div *ngIf="order.status === 'pending'" class="flex gap-2 w-full">
-          <button *ngIf="order.clientPhone || getClientPhone(order)" 
-                  (click)="callClient(order, $event)" 
-                  class="btn btn--outline py-3 px-3" 
-                  title="Llamar al cliente" 
+          <button *ngIf="order.clientPhone || getClientPhone(order)"
+                  (click)="callClient(order, $event)"
+                  class="btn btn--outline py-3 px-3"
+                  title="Llamar al cliente"
                   aria-label="Llamar">
             <span class="material-symbols-outlined text-sm">call</span>
           </button>
-          <button (click)="markLoaded(order.id)" 
+          <button (click)="markLoaded(order.id)"
                   class="btn btn--outline flex-1 py-3">
-            <span class="material-symbols-outlined text-sm">inventory_2</span> Cargar Carga
+            <span class="material-symbols-outlined text-sm">inventory_2</span> Marcar cargado
           </button>
         </div>
 
@@ -157,8 +163,8 @@
   <!-- Confirmar Entrega Modal (Selección de Método de Pago) -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDeliverModal && deliveringOrder">
     <div class="modal-backdrop-overlay" (click)="closeDeliverModal()"></div>
-    
-    <div class="modal-card animate-slide-up">
+
+    <div appDialogFocus (dialogEscape)="closeDeliverModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <div class="flex items-center gap-2">
           <span class="material-symbols-outlined text-success text-2xl">check_circle</span>
@@ -192,8 +198,8 @@
 
           <div class="payment-options-grid grid grid-cols-2 gap-3">
             <!-- Efectivo option -->
-            <button type="button" 
-                    class="payment-option-card"
+            <button type="button"
+                    class="payment-option-card" [disabled]="pendingOrders.has(deliveringOrder.id)"
                     [class.payment-option-card--selected]="selectedPaymentMethod === 'efectivo'"
                     (click)="selectPaymentMethod('efectivo')">
               <div class="payment-icon-wrap" [class.payment-icon-wrap--cash]="selectedPaymentMethod === 'efectivo'">
@@ -207,7 +213,7 @@
             </button>
 
             <!-- QR option -->
-            <button type="button" 
+            <button type="button"
                     class="payment-option-card"
                     [class.payment-option-card--selected]="selectedPaymentMethod === 'qr'"
                     (click)="selectPaymentMethod('qr')">
@@ -224,9 +230,10 @@
         </div>
       </div>
 
+      <p *ngIf="actionError" role="alert" class="data-status data-status--error">{{ actionError }}</p>
       <div class="modal-footer mt-6 flex gap-3">
         <button class="btn btn--outline flex-1 py-3" (click)="closeDeliverModal()">Cancelar</button>
-        <button class="btn btn--success flex-[1.6] py-3 font-bold flex items-center justify-center gap-1.5 shadow-sm" (click)="confirmDelivery()">
+        <button class="btn btn--success flex-[1.6] py-3 font-bold flex items-center justify-center gap-1.5 shadow-sm" [disabled]="pendingOrders.has(deliveringOrder.id)" (click)="confirmDelivery()">
           <span class="material-symbols-outlined text-lg">task_alt</span> Confirmar Entrega
         </button>
       </div>
@@ -236,8 +243,8 @@
   <!-- Falla Report Modal -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showFailModal && failingOrder">
     <div class="modal-backdrop-overlay" (click)="closeFailModal()"></div>
-    
-    <div class="modal-card animate-slide-up">
+
+    <div appDialogFocus (dialogEscape)="closeFailModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-error">Reportar Incidencia</h3>
         <button class="modal-close-btn" (click)="closeFailModal()">
@@ -263,9 +270,10 @@
         </div>
       </div>
 
+      <p *ngIf="actionError" role="alert" class="data-status data-status--error">{{ actionError }}</p>
       <div class="modal-footer mt-6 flex gap-4">
         <button class="btn btn--outline flex-1" (click)="closeFailModal()">Cancelar</button>
-        <button class="btn btn--error flex-[1.5]" (click)="submitFalla()">
+        <button class="btn btn--error flex-[1.5]" [disabled]="pendingOrders.has(failingOrder.id)" (click)="submitFalla()">
           <span class="material-symbols-outlined">warning</span> Registrar Falla
         </button>
       </div>

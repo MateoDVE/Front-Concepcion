@@ -1,4 +1,5 @@
-<div class="container animate-fade-in">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Page Header -->
   <div class="page-header mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
@@ -34,13 +35,13 @@
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-primary text-base">calendar_today</span>
         <input type="date" 
-               [(ngModel)]="selectedDate" 
+               [(ngModel)]="selectedDate" [disabled]="savingRoute"
                (change)="onDateChange()" 
                class="input-date-clean font-semibold" 
                title="Seleccionar fecha (actual, pasada o futura)" />
         <span class="badge badge--today text-xs" *ngIf="isTodaySelected">Hoy</span>
         <span class="badge badge--tomorrow text-xs" *ngIf="isTomorrowSelected">Mañana</span>
-        <button *ngIf="!isTodaySelected" (click)="setToday()" class="btn-today-link" title="Volver a la fecha actual">
+        <button *ngIf="!isTodaySelected" [disabled]="savingRoute" (click)="setToday()" class="btn-today-link" title="Volver a la fecha actual">
           Ir a hoy
         </button>
       </div>
@@ -60,6 +61,36 @@
     </div>
   </section>
 
+  <section class="section-card route-editor mb-6" aria-labelledby="route-heading">
+    <h3 id="route-heading" class="font-bold text-primary">Orden de ruta</h3>
+    <p class="text-muted text-body-sm">Organiza las paradas pendientes de {{ formattedSelectedDate }}, incluso durante el recorrido. Cada movimiento se guarda automáticamente.</p>
+    <div class="route-toolbar">
+      <label for="route-vendor">Vendedor</label>
+      <select id="route-vendor" [(ngModel)]="selectedRouteVendor" (ngModelChange)="updateRouteOrders()" [disabled]="savingRoute">
+        <option value="">Selecciona un vendedor</option>
+        <option *ngFor="let vendor of vendors$ | async" [value]="vendor.id">{{ vendor.name }}</option>
+      </select>
+      <button class="btn btn--outline" (click)="refreshRoute()" [disabled]="savingRoute">Actualizar</button>
+    </div>
+    <p class="text-caption text-muted">Incluye pendientes, cargados y en ruta. Los filtros de búsqueda y estado no ocultan paradas aquí.</p>
+    <p *ngIf="selectedRouteVendor && !routeOrders.length" class="text-muted">No hay paradas pendientes para este vendedor y fecha.</p>
+    <ol class="route-stop-list">
+      <li *ngFor="let order of routeOrders; let i = index; let last = last; trackBy: trackRouteOrder" #routeStop class="route-stop" [class.route-stop--moved]="movedOrderId === order.id">
+        <span class="route-position">{{ i + 1 }}</span>
+        <div class="route-stop-info">
+          <strong>{{ order.clientName }}</strong>
+          <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
+          <small>{{ order.code }} · {{ getStatusLabel(order.status) }}</small>
+        </div>
+        <div class="route-stop-actions">
+          <button class="btn btn--outline" (click)="moveRouteOrder(i, -1)" [disabled]="i === 0" [attr.aria-label]="'Subir parada de ' + order.clientName" title="Subir parada">↑</button>
+          <button class="btn btn--outline" (click)="moveRouteOrder(i, 1)" [disabled]="last" [attr.aria-label]="'Bajar parada de ' + order.clientName" title="Bajar parada">↓</button>
+        </div>
+      </li>
+    </ol>
+    <p role="status" aria-live="polite" class="text-body-sm"><span class="route-movement-message">{{ routeMovementMessage }}</span> {{ routeMessage }}</p>
+  </section>
+
   <!-- Orders Content Card for Selected Day -->
   <section class="section-card">
     <div class="flex items-center justify-between pb-3 mb-3 border-b border-outline-variant/25">
@@ -75,12 +106,12 @@
     </div>
 
     <div class="order-list">
-      <div *ngIf="filteredOrders.length === 0" class="empty-state py-8">
+      <div *ngIf="filteredOrders.length === 0 && stateService.loadingCount() === 0 && !stateService.loadErrors().length" class="empty-state py-8">
         <span class="material-symbols-outlined empty-icon">event_busy</span>
         <p class="text-muted font-medium">No hay pedidos registrados para esta fecha.</p>
       </div>
 
-      <div *ngFor="let order of filteredOrders" (click)="showOrderDetail(order)" class="order-item">
+      <div *ngFor="let order of filteredOrders | slice:0:visibleCount; trackBy: trackEntity" (click)="showOrderDetail(order)" (keydown.enter)="showOrderDetail(order)" (keydown.space)="$event.preventDefault(); showOrderDetail(order)" role="button" tabindex="0" class="order-item">
         <div class="order-left">
           <div class="order-avatar">{{ getClientInitials(order.clientName) }}</div>
           <div class="order-info">
@@ -88,6 +119,7 @@
             <div class="order-id text-caption text-muted">
               {{ order.code }} • {{ order.vendorName || 'Sin asignar' }}
             </div>
+            <p *ngIf="order.description" class="order-description text-caption text-muted">{{ order.description }}</p>
           </div>
         </div>
 
@@ -109,6 +141,7 @@
     </div>
   </section>
 
+  <button *ngIf="filteredOrders.length > visibleCount" type="button" class="btn btn--outline mb-6" (click)="visibleCount = visibleCount + 40">Mostrar más ({{ filteredOrders.length - visibleCount }} restantes)</button>
   <!-- FAB -->
   <a routerLink="/admin/crear-pedido" class="fab shadow-lg" aria-label="Crear pedido">
     <span class="material-symbols-outlined">add</span>
@@ -118,7 +151,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="selectedOrder">
     <div class="modal-backdrop-overlay" (click)="closeModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">{{ selectedOrder.code }}</h3>
         <button class="modal-close-btn" (click)="closeModal()">
@@ -176,6 +209,11 @@
           </p>
         </div>
 
+        <div class="detail-block">
+          <span class="detail-label text-caption text-muted uppercase">Descripción</span>
+          <p class="order-description text-body-sm">{{ selectedOrder.description || 'Sin descripción' }}</p>
+        </div>
+
         <!-- Products List -->
         <div class="detail-block pt-4 border-t">
           <span class="detail-label text-caption text-muted uppercase mb-2">Desglose de Productos</span>
@@ -202,7 +240,7 @@
           <span class="material-symbols-outlined">delete</span> Eliminar
         </button>
         
-        <button *ngIf="selectedOrder.status === 'pending'" class="btn btn--primary flex-[1.5]" (click)="editOrder(selectedOrder.id)">
+        <button *ngIf="['pending', 'loaded', 'route'].includes(selectedOrder.status)" class="btn btn--primary flex-[1.5]" (click)="editOrder(selectedOrder.id)">
           <span class="material-symbols-outlined">edit</span> Editar Pedido
         </button>
 
@@ -217,7 +255,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDeleteOrderModal && selectedOrder">
     <div class="modal-backdrop-overlay" (click)="cancelDeleteOrder()"></div>
 
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelDeleteOrder()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Eliminar pedido</h3>
         <button class="modal-close-btn" (click)="cancelDeleteOrder()">
@@ -246,7 +284,7 @@
   <!-- Modal Confirmar Mover al Día Siguiente -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showMoveModal">
     <div class="modal-backdrop-overlay" (click)="cancelMoveModal()"></div>
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelMoveModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary flex items-center gap-2">
           <span class="material-symbols-outlined text-primary">update</span>

@@ -1,4 +1,5 @@
-<div class="container animate-fade-in pb-12">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in pb-12" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Page Header -->
   <div class="page-header mb-6">
     <h2 class="text-headline-xl text-primary">Clientes Registrados</h2>
@@ -19,13 +20,13 @@
 
   <!-- Clients List Grid -->
   <section class="clients-grid">
-    <div *ngIf="filteredClients.length === 0" class="empty-state w-full">
+    <div *ngIf="filteredClients.length === 0 && stateService.loadingCount() === 0 && !stateService.loadErrors().length" class="empty-state w-full">
       <span class="material-symbols-outlined empty-icon">group_off</span>
       <p class="text-muted">No se encontraron clientes registrados.</p>
     </div>
 
     <!-- Client Card Item -->
-    <div *ngFor="let client of filteredClients" (click)="openDetailModal(client)" class="client-card animate-slide-up">
+    <div *ngFor="let client of filteredClients | slice:0:visibleCount; trackBy: trackEntity" class="client-card animate-slide-up">
       <div class="client-card-header">
         <div class="avatar">{{ getClientInitials(client.name) }}</div>
         <div class="meta">
@@ -51,12 +52,13 @@
           <button class="action-link text-body-sm font-semibold" (click)="$event.stopPropagation(); openEditModal(client)" title="Editar cliente">
             <span class="material-symbols-outlined text-sm">edit</span> Editar
           </button>
-          <span class="material-symbols-outlined chevron">chevron_right</span>
+          <button type="button" class="action-link" (click)="openDetailModal(client)" [attr.aria-label]="'Ver historial de ' + client.name">Ver historial</button>
         </div>
       </div>
     </div>
   </section>
 
+  <button *ngIf="filteredClients.length > visibleCount" type="button" class="btn btn--outline mb-6" (click)="visibleCount = visibleCount + 40">Mostrar más ({{ filteredClients.length - visibleCount }} restantes)</button>
   <!-- FAB -->
   <button class="fab shadow-lg" (click)="openAddModal()" aria-label="Agregar cliente">
     <span class="material-symbols-outlined">person_add</span>
@@ -66,7 +68,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showAddModal">
     <div class="modal-backdrop-overlay" (click)="closeAddModal()"></div>
     
-    <form #clientForm="ngForm" (ngSubmit)="saveClient(clientForm)" novalidate class="modal-card animate-slide-up">
+    <form appDialogFocus (dialogEscape)="closeAddModal()" aria-label="Formulario" #clientForm="ngForm" (ngSubmit)="saveClient(clientForm)" novalidate class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Registrar Cliente</h3>
         <button type="button" class="modal-close-btn" (click)="closeAddModal()">
@@ -186,7 +188,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal">
     <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
     
-    <form #editClientForm="ngForm" (ngSubmit)="saveEditClient(editClientForm)" novalidate class="modal-card animate-slide-up">
+    <form appDialogFocus (dialogEscape)="closeEditModal()" aria-label="Formulario" #editClientForm="ngForm" (ngSubmit)="saveEditClient(editClientForm)" novalidate class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Editar Cliente</h3>
         <button type="button" class="modal-close-btn" (click)="closeEditModal()">
@@ -282,7 +284,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDetailModal && selectedClient">
     <div class="modal-backdrop-overlay" (click)="closeDetailModal()"></div>
     
-    <div class="modal-card modal-card--large animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeDetailModal()" aria-label="Ventana de detalle" class="modal-card modal-card--large animate-slide-up">
       <div class="modal-header mb-4 flex justify-between items-center">
         <h3 class="text-headline-md font-bold text-primary">Detalle del Cliente</h3>
         <div class="flex items-center gap-2">
@@ -408,7 +410,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showDeleteSpecialPriceModal && selectedClient">
     <div class="modal-backdrop-overlay" (click)="cancelDeleteSpecialPrice()"></div>
 
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelDeleteSpecialPrice()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Eliminar precio especial</h3>
         <button class="modal-close-btn" (click)="cancelDeleteSpecialPrice()">

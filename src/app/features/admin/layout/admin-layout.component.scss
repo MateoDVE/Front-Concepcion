@@ -1,3 +1,4 @@
+@use '../../../../styles/workspace-shell' as shell;
 @use 'sass:color';
 @use '../../../../styles/variables' as *;
 @use '../../../../styles/mixins' as *;
@@ -307,3 +308,5 @@
     display: none;
   }
 }
+
+@include shell.refinements;

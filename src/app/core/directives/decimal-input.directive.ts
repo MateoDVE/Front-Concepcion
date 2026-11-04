@@ -199,7 +199,7 @@ export class DecimalInputDirective implements ControlValueAccessor, Validator {
 
     // Si el usuario está interactuando activamente con el campo,
     // evitamos sobrescribir si el valor numérico equivale a lo que ya escribió (ej. '12.' o '12.0')
-    if (document.activeElement === input) {
+    if (input.ownerDocument?.activeElement === input) {
       const currentParsed = parseFloat(input.value.replace(/,/g, '.'));
       if (currentParsed === numValue) {
         return;

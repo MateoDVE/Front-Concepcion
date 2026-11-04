@@ -18,7 +18,7 @@
 }
 
 .progress-gradient {
-  background: linear-gradient(90deg, #97f5a2 0%, #077230 100%);
+  background: $color-secondary;
 }
 
 // Stop card lists
@@ -63,27 +63,30 @@
     .left-info {
       @include flex(row, flex-start, center, $space-3);
       min-width: 0;
+      flex: 1 1 0;
     }
 
     .client-meta {
       min-width: 0;
+      flex: 1;
       @include flex-column(center, flex-start, 2px);
 
       .client-name {
         line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow-wrap: anywhere;
       }
     }
 
     .right-total {
       @include flex(row, flex-end, center, $space-2);
+      flex: 0 0 auto;
+      font-variant-numeric: tabular-nums;
     }
 
     .btn-call-quick {
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: $radius-full;
       background: rgba($color-primary, 0.08);
       color: $color-primary;
@@ -289,4 +292,18 @@
     font-size: 48px;
     color: $color-outline-variant;
   }
+}
+
+.order-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// On narrow screens identity gets a full row; amount and contact remain together below it.
+@media (max-width: 600px) {
+  .stop-card .stop-card-header { flex-wrap: wrap; }
+  .stop-card .stop-card-header .left-info { flex-basis: 100%; align-items: flex-start; }
+  .stop-card .stop-card-header .right-total { width: 100%; justify-content: flex-end; }
+  .stop-card .stop-card-header .client-meta { flex: 1; min-width: 0; }
+  .stop-card .stop-card-header .client-name { width: 100%; }
 }

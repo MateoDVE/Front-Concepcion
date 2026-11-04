@@ -1,13 +1,18 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Component, DestroyRef, PLATFORM_ID, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest, interval } from 'rxjs';
+import { compareRouteOrders } from '../../../core/models/route-order';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Vendor, OrderStatus } from '../../../core/models/types';
 import { FormsModule } from '@angular/forms';
-import { map } from 'rxjs/operators';
+
 
 @Component({
   selector: 'app-vendor-ruta',
-  imports: [CommonModule, FormsModule],
+  imports: [DialogFocusDirective, CommonModule, FormsModule],
   templateUrl: './vendor-ruta.component.html',
   styleUrl: './vendor-ruta.component.scss',
   standalone: true
@@ -15,6 +20,23 @@ import { map } from 'rxjs/operators';
 export class VendorRutaComponent implements OnInit {
   private stateService = inject(StateService);
 
+  pendingOrders = new Set<string>();
+  actionError = '';
+  private changeStatus(id: string, status: OrderStatus, extra?: { failedReason?: string; paymentMethod?: 'efectivo' | 'qr' }, done?: () => void) {
+    if (this.pendingOrders.has(id)) return;
+    this.pendingOrders.add(id);
+    this.actionError = '';
+    this.stateService.updateOrderStatus(id, status, extra).pipe(finalize(() => this.pendingOrders.delete(id))).subscribe({
+      next: () => { this.expandedOrderIds.delete(id); done?.(); },
+      error: () => this.actionError = 'No se pudo confirmar el cambio. Actualiza la ruta para comprobar el estado antes de reintentar.'
+    });
+  }
+  getStatusLabel(status: OrderStatus): string {
+    return ({ pending: 'Pendiente', loaded: 'Cargado', route: 'En ruta', delivered: 'Entregado', failed: 'No entregado' })[status];
+  }
+  getAddress(order: Order): string {
+    return order.clientAddress || this.stateService.getClientById(order.clientId)?.address || 'Sin dirección registrada';
+  }
   activeVendor: Vendor | null = null;
   vendorOrders: Order[] = [];
   
@@ -36,75 +58,32 @@ export class VendorRutaComponent implements OnInit {
   // Track expanded cards
   expandedOrderIds = new Set<string>();
 
-  ngOnInit() {
-    this.stateService.activeVendor$.subscribe(av => {
-      this.activeVendor = av;
-      this.loadVendorOrders();
-    });
+  private destroyRef = inject(DestroyRef);
+  private platformId = inject(PLATFORM_ID);
 
-    // Also watch today's orders list for updates
-    this.stateService.todayOrders$.subscribe(() => {
-      this.loadVendorOrders();
-    });
+  ngOnInit() {
+    combineLatest([this.stateService.activeVendor$, this.stateService.todayOrders$])
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([vendor, orders]) => {
+        this.activeVendor = vendor;
+        this.vendorOrders = vendor ? orders.filter(o => o.vendorId === vendor.id).sort(compareRouteOrders) : [];
+        this.calculateProgress();
+      });
+    if (isPlatformBrowser(this.platformId)) {
+      this.stateService.loadTodayOrders();
+      interval(30000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+        if (!this.pendingOrders.size && (typeof document === 'undefined' || !document.hidden)) {
+          this.stateService.loadTodayOrders();
+        }
+      });
+    }
   }
 
-  loadVendorOrders() {
-    if (!this.activeVendor) return;
-
-    this.stateService.todayOrders$.pipe(
-      map(orders => orders.filter(o => o.vendorId === this.activeVendor?.id))
-    ).subscribe(orders => {
-      this.vendorOrders = this.sortOrders(orders);
-      this.calculateProgress();
-    });
+  refreshRoute() {
+    this.stateService.loadTodayOrders();
   }
 
   trackByOrderId(_index: number, order: Order): string {
     return order.id;
-  }
-
-  /**
-   * Ordena los pedidos para que los entregados pasen automáticamente abajo.
-   * Prioridad:
-   * 1. route (entrega activa en curso)
-   * 2. loaded (cargado en vehículo)
-   * 3. pending (pendiente de carga)
-   * 4. failed (falla registrada)
-   * 5. delivered (entregado - al fondo)
-   */
-  private sortOrders(orders: Order[]): Order[] {
-    const statusPriority: Record<OrderStatus, number> = {
-      route: 0,
-      loaded: 1,
-      pending: 2,
-      failed: 3,
-      delivered: 4
-    };
-
-    return [...orders].sort((a, b) => {
-      const pA = statusPriority[a.status] ?? 99;
-      const pB = statusPriority[b.status] ?? 99;
-
-      if (pA !== pB) {
-        return pA - pB;
-      }
-
-      // Si ambos están entregados, mantener el orden en que se entregaron
-      if (a.status === 'delivered' && b.status === 'delivered') {
-        const timeA = a.deliveredAt ? new Date(a.deliveredAt).getTime() : new Date(a.createdAt).getTime();
-        const timeB = b.deliveredAt ? new Date(b.deliveredAt).getTime() : new Date(b.createdAt).getTime();
-        return timeA - timeB;
-      }
-
-      // Para los demás estados, preservar orden secuencial de ruta
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      if (dateA !== dateB) {
-        return dateA - dateB;
-      }
-
-      return (a.code || a.id).localeCompare(b.code || b.id);
-    });
   }
 
   calculateProgress() {
@@ -137,15 +116,16 @@ export class VendorRutaComponent implements OnInit {
 
   // ---- Vendor Flow Actions ----
   markLoaded(orderId: string) {
-    this.stateService.updateOrderStatus(orderId, 'loaded');
+    this.changeStatus(orderId, 'loaded');
   }
 
   startDelivery(orderId: string) {
-    this.stateService.updateOrderStatus(orderId, 'route');
+    this.changeStatus(orderId, 'route');
   }
 
   openDeliverModal(order: Order, event?: Event) {
     event?.stopPropagation();
+    this.actionError = '';
     this.deliveringOrder = order;
     this.selectedPaymentMethod = 'efectivo';
     this.showDeliverModal = true;
@@ -163,10 +143,9 @@ export class VendorRutaComponent implements OnInit {
   confirmDelivery() {
     if (!this.deliveringOrder) return;
     this.expandedOrderIds.delete(this.deliveringOrder.id);
-    this.stateService.updateOrderStatus(this.deliveringOrder.id, 'delivered', {
+    this.changeStatus(this.deliveringOrder.id, 'delivered', {
       paymentMethod: this.selectedPaymentMethod
-    });
-    this.closeDeliverModal();
+    }, () => this.closeDeliverModal());
   }
 
   markDelivered(orderId: string) {
@@ -175,11 +154,12 @@ export class VendorRutaComponent implements OnInit {
       this.openDeliverModal(order);
     } else {
       this.expandedOrderIds.delete(orderId);
-      this.stateService.updateOrderStatus(orderId, 'delivered', { paymentMethod: 'efectivo' });
+      this.changeStatus(orderId, 'delivered', { paymentMethod: 'efectivo' });
     }
   }
 
   openFailModal(order: Order) {
+    this.actionError = '';
     this.failingOrder = order;
     this.failReason = 'Cliente Ausente';
     this.showFailModal = true;
@@ -193,12 +173,14 @@ export class VendorRutaComponent implements OnInit {
   submitFalla() {
     if (!this.failingOrder) return;
     this.expandedOrderIds.delete(this.failingOrder.id);
-    this.stateService.updateOrderStatus(this.failingOrder.id, 'failed', { failedReason: this.failReason });
-    this.closeFailModal();
+    this.changeStatus(this.failingOrder.id, 'failed', { failedReason: this.failReason }, () => this.closeFailModal());
   }
 
   openMap(order: Order) {
-    const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(order.clientName)}`;
+    if (!order.clientLocationUrl && this.getAddress(order) === 'Sin dirección registrada') {
+      this.actionError = 'Registra una dirección o ubicación para abrir el mapa.'; return;
+    }
+    const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(this.getAddress(order))}`;
     window.open(url, '_blank');
   }
 
@@ -206,7 +188,7 @@ export class VendorRutaComponent implements OnInit {
     event?.stopPropagation();
     const phone = this.getClientPhone(order);
     if (!phone) {
-      alert('El cliente no tiene un teléfono registrado.');
+      this.actionError = 'El cliente no tiene un teléfono registrado.';
       return;
     }
     const cleanPhone = phone.replace(/[^\d+]/g, '');

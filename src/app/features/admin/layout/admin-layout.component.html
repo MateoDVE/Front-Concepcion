@@ -1,6 +1,7 @@
+<a class="skip-link" href="#main-content">Saltar al contenido</a>
 <div class="app-layout">
   <!-- Desktop Sidebar & Mobile Drawer -->
-  <aside class="app-sidebar" [class.open]="isMobileSidebarOpen">
+  <aside id="main-navigation" class="app-sidebar" [class.open]="isMobileSidebarOpen" appNavigationDrawer [drawerOpen]="isMobileSidebarOpen" (drawerDismiss)="closeMobileSidebar()" aria-label="Menú principal">
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8,26 +9,31 @@
         </svg>
       </div>
       <span class="sidebar-logo-text">Concepción</span>
+      <button type="button" class="drawer-close" (click)="closeMobileSidebar()" aria-label="Cerrar menú"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/admin/dashboard" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">dashboard</span> Dashboard
       </a>
-      <a routerLink="/admin/pedidos" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">local_shipping</span> Pedidos
       </a>
-      <a routerLink="/admin/crear-pedido" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/crear-pedido" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">add_circle</span> Crear Pedido
       </a>
-      <a routerLink="/admin/clientes" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/clientes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">person</span> Clientes
       </a>
-      <a routerLink="/admin/inventario" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/inventario" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">inventory_2</span> Inventario
       </a>
-      <a routerLink="/admin/reporte" routerLinkActive="active" (click)="closeMobileSidebar()" class="sidebar-link">
+      <a routerLink="/admin/reporte" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
         <span class="material-symbols-outlined">analytics</span> Reportes
+      </a>
+
+      <a routerLink="/admin/usuarios" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileSidebar()" class="sidebar-link">
+        <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span> Usuarios
       </a>
 
       <div class="spacer"></div>
@@ -54,7 +60,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <button class="header-btn" (click)="toggleMobileSidebar()" aria-label="Menu">
+        <button class="header-btn" (click)="toggleMobileSidebar()" aria-label="Abrir menú" aria-controls="main-navigation" [attr.aria-expanded]="isMobileSidebarOpen">
           <span class="material-symbols-outlined">menu</span>
         </button>
         <span class="header-title font-bold text-headline-md">Distribuidora Concepción</span>
@@ -71,30 +77,31 @@
     </header>
 
     <!-- Main Content Outlet -->
-    <main class="app-main">
-      <router-outlet></router-outlet>
+    <main id="main-content" tabindex="-1" class="app-main">
+      <app-data-status></app-data-status>
+    <router-outlet></router-outlet>
     </main>
   </div>
 
   <!-- Bottom Navigation (Mobile Viewports) -->
   <nav class="app-bottom-nav">
-    <a routerLink="/admin/dashboard" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/admin/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">dashboard</span>
       <span>Inicio</span>
     </a>
-    <a routerLink="/admin/pedidos" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/admin/pedidos" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">local_shipping</span>
       <span>Pedidos</span>
     </a>
-    <a routerLink="/admin/crear-pedido" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/admin/crear-pedido" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">add_circle</span>
       <span>Crear</span>
     </a>
-    <a routerLink="/admin/clientes" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/admin/clientes" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">person</span>
       <span>Clientes</span>
     </a>
-    <a routerLink="/admin/reporte" routerLinkActive="active" class="bottom-nav-item">
+    <a routerLink="/admin/reporte" routerLinkActive="active" ariaCurrentWhenActive="page" class="bottom-nav-item">
       <span class="material-symbols-outlined">analytics</span>
       <span>Reportes</span>
     </a>

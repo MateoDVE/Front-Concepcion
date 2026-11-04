@@ -1,0 +1,107 @@
+<div class="users-page">
+  <header class="page-heading">
+    <h1>Usuarios</h1>
+    <p>Crea cuentas para vendedores y personal de almacén.</p>
+    <nav class="users-shortcuts" aria-label="Secciones de usuarios">
+      <a href="#registered-team">Ver equipo</a>
+      <a href="#new-account">Crear una cuenta</a>
+    </nav>
+  </header>
+
+  <div class="users-layout">
+    <section id="new-account" tabindex="-1" class="user-form" aria-labelledby="create-heading">
+      <h2 id="create-heading">Nueva cuenta</h2>
+      <p class="hint">Todos los campos son obligatorios, excepto el teléfono.</p>
+      <p *ngIf="success" class="message success" role="status">{{ success }}</p>
+      <p *ngIf="error" class="message error" role="alert">{{ error }}</p>
+      <form #form="ngForm" (ngSubmit)="submit(form)">
+        <fieldset [disabled]="saving">
+          <div class="field">
+            <label for="staff-name">Nombre completo</label>
+            <input id="staff-name" name="nombre" [(ngModel)]="model.nombre" #nombre="ngModel" required maxlength="150" pattern=".*\S.*" autocomplete="off" [attr.aria-invalid]="nombre.invalid && nombre.touched" aria-describedby="name-error" />
+            <small id="name-error" class="field-error" *ngIf="nombre.invalid && nombre.touched">Escribe el nombre completo.</small>
+          </div>
+          <div class="field">
+            <label for="staff-role">Tipo de usuario</label>
+            <select id="staff-role" name="rol" [(ngModel)]="model.rol" required aria-describedby="role-help">
+              <option value="vendedor">Vendedor</option>
+              <option value="almacen">Almacén</option>
+            </select>
+            <small id="role-help">{{ model.rol === 'vendedor' ? 'Tendrá acceso al panel de vendedor y podrá recibir pedidos.' : 'Tendrá acceso al panel de almacén.' }}</small>
+          </div>
+          <div class="field">
+            <label for="staff-username">Nombre de usuario</label>
+            <input id="staff-username" name="usuario" [(ngModel)]="model.usuario" #usuario="ngModel" required minlength="3" maxlength="50" pattern="[a-zA-Z0-9._-]+" autocomplete="off" aria-describedby="username-help" [attr.aria-invalid]="usuario.invalid && usuario.touched" />
+            <small id="username-help" [class.field-error]="usuario.invalid && usuario.touched">De 3 a 50 caracteres: letras sin tildes, números, punto, guion o guion bajo.</small>
+          </div>
+          <div class="field">
+            <label for="staff-email">Correo para iniciar sesión</label>
+            <input id="staff-email" name="email" type="email" [(ngModel)]="model.email" #email="ngModel" required email maxlength="254" autocomplete="off" [attr.aria-invalid]="email.invalid && email.touched" aria-describedby="email-error" />
+            <small id="email-error" class="field-error" *ngIf="email.invalid && email.touched">Escribe un correo electrónico válido.</small>
+          </div>
+          <div class="field">
+            <label for="staff-password">Contraseña</label>
+            <div class="password-row">
+              <input id="staff-password" name="password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="model.password" #password="ngModel" required minlength="8" maxlength="72" autocomplete="new-password" aria-describedby="password-help" [attr.aria-invalid]="password.invalid && password.touched" />
+              <button type="button" class="secondary" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword" aria-controls="staff-password">{{ showPassword ? 'Ocultar' : 'Mostrar' }}</button>
+            </div>
+            <small id="password-help" [class.field-error]="password.invalid && password.touched">Entre 8 y 72 caracteres. Comparte las credenciales de forma privada.</small>
+          </div>
+          <div class="field" *ngIf="model.rol === 'vendedor'">
+            <label for="staff-phone">Teléfono <span class="optional">(opcional)</span></label>
+            <input id="staff-phone" name="telefono" type="tel" [(ngModel)]="model.telefono" maxlength="20" autocomplete="off" />
+          </div>
+          <button class="primary" type="submit" [disabled]="saving">{{ saving ? 'Creando usuario…' : 'Crear usuario' }}</button>
+        </fieldset>
+      </form>
+    </section>
+
+    <section id="registered-team" tabindex="-1" class="users-list" aria-labelledby="list-heading" [attr.aria-busy]="loading">
+      <h2 id="list-heading">Equipo registrado</h2>
+      <p class="hint">Vendedores y personal de almacén con cuenta en el sistema.</p>
+      <div class="team-filters">
+        <div class="field search-field">
+          <label for="team-search">Buscar usuario</label>
+          <input id="team-search" type="search" [(ngModel)]="search" placeholder="Nombre o usuario" autocomplete="off" />
+        </div>
+        <div class="field"><label for="team-role">Rol</label>
+          <select id="team-role" [(ngModel)]="roleFilter"><option value="">Todos</option><option value="vendedor">Vendedor</option><option value="almacen">Almacén</option></select>
+        </div>
+        <div class="field"><label for="team-status">Estado</label>
+          <select id="team-status" [(ngModel)]="statusFilter"><option value="">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select>
+        </div>
+      </div>
+      <p class="message success" *ngIf="statusMessage" role="status">{{ statusMessage }}</p>
+      <p *ngIf="loading" role="status">Cargando usuarios…</p>
+      <div *ngIf="loadError" role="alert" class="message error">
+        <p>{{ loadError }}</p><button type="button" class="secondary" (click)="load()">Reintentar</button>
+      </div>
+      <ng-container *ngIf="!loading && !loadError">
+        <p class="results-count" role="status">{{ filteredUsers.length }} de {{ users.length }} usuarios</p>
+        <p *ngIf="!users.length" class="empty-state">Aún no hay usuarios de estos tipos. Crea la primera cuenta con el formulario.</p>
+        <div *ngIf="users.length && !filteredUsers.length" class="empty-state">
+          <p>No hay usuarios que coincidan con tu búsqueda.</p>
+          <button type="button" class="secondary" (click)="clearFilters()">Limpiar filtros</button>
+        </div>
+        <ul>
+          <li *ngFor="let user of filteredUsers">
+            <div class="user-info"><h3>{{ user.nombre }}</h3><p>{{ user.usuario }}</p></div>
+            <div class="user-state">
+              <span class="role">{{ user.rol === 'vendedor' ? 'Vendedor' : 'Almacén' }}</span>
+              <small class="account-status" [class.inactive]="!user.activo">{{ user.activo ? 'Activo' : 'Inactivo' }}</small>
+              <button type="button" class="secondary" [disabled]="updatingStatus" (click)="requestStatusChange(user)" [attr.aria-label]="(user.activo ? 'Desactivar a ' : 'Activar a ') + user.nombre">{{ user.activo ? 'Desactivar' : 'Activar' }}</button>
+            </div>
+            <div *ngIf="pendingStatus?.id === user.id" class="status-confirm" role="group" [attr.aria-label]="'Confirmar cambio de estado de ' + user.nombre">
+              <p>{{ user.activo ? 'Al desactivar esta cuenta, perderá el acceso al sistema. Su historial y pedidos se conservarán.' : 'Al activar esta cuenta, podrá volver a acceder al sistema.' }}</p>
+              <p *ngIf="statusError" class="field-error" role="alert">{{ statusError }}</p>
+              <div class="status-actions">
+                <button type="button" class="secondary" [disabled]="updatingStatus" (click)="pendingStatus = null">Cancelar</button>
+                <button type="button" class="primary" [disabled]="updatingStatus" (click)="confirmStatusChange()">{{ updatingStatus ? 'Guardando…' : user.activo ? 'Confirmar desactivación' : 'Confirmar activación' }}</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </ng-container>
+    </section>
+  </div>
+</div>

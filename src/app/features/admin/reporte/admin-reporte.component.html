@@ -603,6 +603,7 @@
                   <div>
                     <span class="text-caption text-muted block text-[11px] sm:text-caption">Efectividad</span>
                     <span class="font-bold text-body-sm sm:text-body-lg text-primary">{{ month.efficiencyRate }}%</span>
+                    <span class="text-caption text-muted block">{{ month.totalDelivered }} de {{ month.totalOrders }} pedidos actuales entregados</span>
                   </div>
                 </div>
 
@@ -618,7 +619,7 @@
             <!-- Accordion Body (Daily breakdown within the month) -->
             <div *ngIf="month.isExpanded" class="accordion-body border-t bg-neutral-50/30 p-3.5 sm:p-5 animate-slide-up">
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                <h4 class="font-bold text-body-md text-primary">Detalle Diario de la Operación</h4>
+                <h4 class="font-bold text-body-md text-primary">Cierres diarios registrados</h4>
                 <button class="btn btn--outline py-1 px-3 text-caption font-semibold flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 w-fit"
                         (click)="exportCurrentMonth(month, $event)">
                   <span class="material-symbols-outlined text-[15px]">file_download</span>
@@ -749,7 +750,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showCloseDayModal">
     <div class="modal-backdrop-overlay" (click)="cancelCloseDay()"></div>
 
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelCloseDay()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Cierre de Jornada</h3>
         <button class="modal-close-btn" (click)="cancelCloseDay()">
@@ -784,7 +785,7 @@
   <!-- Modal Confirmar Mover al Día Siguiente desde Reporte -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showMoveModal">
     <div class="modal-backdrop-overlay" (click)="cancelMoveModal()"></div>
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelMoveModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary flex items-center gap-2">
           <span class="material-symbols-outlined text-primary">update</span>

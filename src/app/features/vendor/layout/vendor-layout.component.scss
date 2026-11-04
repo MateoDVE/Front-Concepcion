@@ -1,3 +1,4 @@
+@use '../../../../styles/workspace-shell' as shell;
 @use '../../../../styles/variables' as *;
 @use '../../../../styles/mixins' as *;
 
@@ -60,7 +61,7 @@
     width: 36px;
     height: 36px;
     border-radius: $radius-full;
-    background: linear-gradient(135deg, $color-secondary-container 0%, $color-on-secondary-container 100%);
+    background: $color-secondary;
     color: $color-on-secondary;
     font-weight: $weight-bold;
     font-size: $text-label-md;
@@ -234,3 +235,8 @@
     }
   }
 }
+
+@include shell.refinements;
+
+@media (max-width: 640px) { .app-bottom-nav { left: 50%; right: auto; width: calc(100% - 16px); } }
+@media (min-width: 768px) { .app-main { max-width: 960px; } }

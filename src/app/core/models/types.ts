@@ -20,6 +20,7 @@ export interface Product {
 }
 
 export interface Vendor {
+  active?: boolean;
   id: string;
   name: string;
   phone: string;
@@ -40,13 +41,17 @@ export type PaymentMethod = 'efectivo' | 'qr';
 export interface Order {
   id: string;
   code?: string;
+  description?: string | null;
   clientId: string;
   clientName: string;
   clientPhone?: string;
   clientLocationUrl?: string;
   vendorId: string | null;
+  routeOrder?: number | null;
+  clientAddress?: string;
   vendorName: string | null;
   status: OrderStatus;
+  scheduledDate?: string; // YYYY-MM-DD, operational day in Bolivia
   createdAt: string; // ISO string or timestamp
   deliveredAt: string | null;
   paymentMethod?: PaymentMethod | null;

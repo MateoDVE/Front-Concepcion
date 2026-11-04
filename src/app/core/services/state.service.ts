@@ -1,8 +1,8 @@
-import { Injectable, inject, PLATFORM_ID, Inject } from '@angular/core';
+import { Injectable, signal, inject, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, forkJoin, of, combineLatest } from 'rxjs';
-import { map, switchMap, catchError, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, forkJoin, of, combineLatest, throwError, defer } from 'rxjs';
+import { map, switchMap, catchError, tap, finalize } from 'rxjs/operators';
 import { Client, Product, Vendor, Order, OrderStatus, KPIs } from '../models/types';
 import { APP_CONFIG } from '../config/constants';
 import { AuthService } from './auth.service';
@@ -13,6 +13,22 @@ import { AuthService } from './auth.service';
 export class StateService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+
+  readonly loadingCount = signal(0);
+  readonly loadErrors = signal<string[]>([]);
+  private trackLoad<T>(name: string, request: Observable<T>): Observable<T> {
+    return defer(() => {
+      this.loadingCount.update(n => n + 1);
+      return request.pipe(
+        tap(() => this.loadErrors.update(names => names.filter(item => item !== name))),
+        catchError(error => {
+          this.loadErrors.update(names => [...new Set([...names, name])]);
+          return throwError(() => error);
+        }),
+        finalize(() => this.loadingCount.update(n => n - 1))
+      );
+    });
+  }
 
   // Behavior Subjects
   private clientsSubject = new BehaviorSubject<Client[]>([]);
@@ -42,7 +58,7 @@ export class StateService {
         return [];
       }
       const todayStr = this.getLocalDateString();
-      return orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
+      return orders.filter(o => this.getOrderDate(o) === todayStr);
     })
   );
 
@@ -54,7 +70,7 @@ export class StateService {
       }
 
       const todayStr = this.getLocalDateString();
-      const todayOrders = orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
+      const todayOrders = orders.filter(o => this.getOrderDate(o) === todayStr);
 
       const pending = todayOrders.filter(o => o.status === 'pending').length;
       const inRoute = todayOrders.filter(o => o.status === 'route' || o.status === 'loaded').length;
@@ -71,13 +87,14 @@ export class StateService {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(platformId);
-    this.initData();
 
-    // Re-load data if auth state changes
+    // Load data initially and re-load if auth state changes
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.initData();
       } else {
+        this.specialPricesCache.clear();
+        this.loadErrors.set([]);
         // Clear state on logout
         this.clientsSubject.next([]);
         this.productsSubject.next([]);
@@ -96,31 +113,36 @@ export class StateService {
     this.loadClients();
     this.loadProducts();
     
-    // Load vendors and match the active logged-in vendor
-    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/users/vendors`).subscribe({
-      next: (dbVendors) => {
-        const mappedVendors = dbVendors.map(v => this.mapVendor(v));
-        this.vendorsSubject.next(mappedVendors);
+    this.loadVendors();
 
-        // Match the logged-in user to their vendor profile
-        const matchingVendor = mappedVendors.find(v => v.usuario_id === this.authService.userId);
-        if (matchingVendor) {
-          this.activeVendorSubject.next(matchingVendor);
-        } else if (mappedVendors.length > 0) {
-          this.activeVendorSubject.next(mappedVendors[0]);
-        }
-      },
-      error: (err) => console.error('Error loading vendors', err)
-    });
+    const loadInitialOrders = () => {
+      if (this.authService.userRole === 'vendedor') {
+        this.loadTodayOrders();
+      } else {
+        this.loadOrders();
+      }
+    };
 
     this.checkTodayClosedStatus().subscribe({
       next: () => {
-        this.loadOrders();
+        loadInitialOrders();
       },
       error: (err) => {
         console.error('Error checking today closed status', err);
-        this.loadOrders();
+        loadInitialOrders();
       }
+    });
+  }
+
+  public loadVendors(): void {
+    this.trackLoad('vendedores', this.http.get<any[]>(`${APP_CONFIG.apiUrl}/users/vendors`)).subscribe({
+      next: dbVendors => {
+        const vendors = dbVendors.map(v => this.mapVendor(v));
+        this.vendorsSubject.next(vendors);
+        const matchingVendor = vendors.find(v => v.usuario_id === this.authService.userId);
+        this.activeVendorSubject.next(matchingVendor ?? vendors[0] ?? null);
+      },
+      error: err => console.error('Error loading vendors', err)
     });
   }
 
@@ -136,21 +158,74 @@ export class StateService {
   }
 
   public loadClients(): void {
-    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/clients`).subscribe({
+    this.trackLoad('clientes', this.http.get<any[]>(`${APP_CONFIG.apiUrl}/clients`)).subscribe({
       next: (res) => this.clientsSubject.next(res.map(c => this.mapClient(c))),
       error: (err) => console.error('Error loading clients', err)
     });
   }
 
   public loadProducts(): void {
-    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/products`).subscribe({
+    this.trackLoad('inventario', this.http.get<any[]>(`${APP_CONFIG.apiUrl}/products`)).subscribe({
       next: (res) => this.productsSubject.next(res.map(p => this.mapProduct(p))),
       error: (err) => console.error('Error loading products', err)
     });
   }
 
+  reorderRoute(vendorId: string, date: string, orderIds: string[], previousOrderIds: string[]): Observable<void> {
+    return this.http.patch(`${APP_CONFIG.apiUrl}/orders/route-order`, {
+      vendedor_id: vendorId, fecha: date, order_ids: orderIds, previous_order_ids: previousOrderIds
+    }).pipe(
+      map(() => {
+        const positions = new Map(orderIds.map((id, index) => [id, index + 1]));
+        this.ordersSubject.next(this.ordersSubject.value.map(order => {
+          const position = positions.get(order.id);
+          return position === undefined ? order : { ...order, routeOrder: position };
+        }));
+      })
+    );
+  }
+
+  fetchOrders(): Observable<Order[]> {
+    return this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders`).pipe(
+      map(rows => rows.map(row => this.mapOrder(row)))
+    );
+  }
+
+  public loadTodayOrders(): void {
+    const todayStr = this.getLocalDateString();
+    const vendorId = this.authService.userRole === 'vendedor' ? this.activeVendorSubject.value?.id : undefined;
+    const params = new URLSearchParams({ fecha_programada: todayStr });
+    if (vendorId) {
+      params.set('vendedor_id', vendorId);
+    }
+    this.trackLoad('ruta', this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders?${params.toString()}`)).subscribe({
+      next: (res) => {
+        const mappedToday = res.map(o => this.mapOrder(o));
+        const otherOrders = this.ordersSubject.value.filter(
+          o => this.getOrderDate(o) !== todayStr
+            || (vendorId ? o.vendorId !== vendorId : false)
+        );
+        this.ordersSubject.next([...mappedToday, ...otherOrders]);
+      },
+      error: (err) => console.error('Error loading today orders', err)
+    });
+  }
+
+  private upsertOrderInState(dbOrder: any): void {
+    if (!dbOrder || !dbOrder.id) {
+      this.loadTodayOrders();
+      return;
+    }
+    const mapped = this.mapOrder(dbOrder);
+    const current = this.ordersSubject.value;
+    const exists = current.some(o => o.id === mapped.id);
+    this.ordersSubject.next(
+      exists ? current.map(o => (o.id === mapped.id ? mapped : o)) : [mapped, ...current]
+    );
+  }
+
   public loadOrders(): void {
-    this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders`).subscribe({
+    this.trackLoad('pedidos', this.http.get<any[]>(`${APP_CONFIG.apiUrl}/orders`)).subscribe({
       next: (res) => this.ordersSubject.next(res.map(o => this.mapOrder(o))),
       error: (err) => console.error('Error loading orders', err)
     });
@@ -161,8 +236,8 @@ export class StateService {
     return {
       id: db.id,
       name: db.nombre,
-      phone: db.telefono,
-      address: db.direccion,
+      phone: db.telefono || '',
+      address: db.direccion || '',
       locationUrl: db.ubicacion_url || `https://maps.google.com/?q=${encodeURIComponent(db.direccion)}`,
       clientType: db.tipo_cliente || 'Particular',
       createdBy: db.creado_por_nombre || 'Sistema',
@@ -184,6 +259,7 @@ export class StateService {
 
   private mapVendor(db: any): Vendor {
     return {
+      active: db.activo !== false,
       id: db.id,
       name: db.nombre,
       phone: db.telefono || '',
@@ -201,10 +277,14 @@ export class StateService {
       clientPhone: db.cliente?.telefono || this.clientsSubject.value.find(c => c.id === db.cliente_id)?.phone || undefined,
       clientLocationUrl: db.cliente?.ubicacion_url || (db.cliente?.direccion ? `https://maps.google.com/?q=${encodeURIComponent(db.cliente.direccion)}` : undefined),
       vendorId: db.vendedor_id,
+      routeOrder: db.orden_ruta ?? null,
+      clientAddress: db.cliente?.direccion,
       vendorName: db.vendedor?.nombre || null,
       status: db.estado as OrderStatus,
+      scheduledDate: db.fecha_programada?.slice(0, 10),
       createdAt: db.fecha_creacion || db.created_at,
       deliveredAt: db.fecha_entrega || null,
+      description: db.descripcion ?? null,
       paymentMethod: (db.metodo_pago as any) || null,
       total: Number(db.total),
       failedReason: db.motivo_falla || undefined,
@@ -232,7 +312,7 @@ export class StateService {
     locationUrl: string,
     clientType: string = 'Particular',
     specialPrices: { producto_id: string; precio_especial: number }[] = []
-  ): void {
+  ): Observable<Client> {
     const body = {
       nombre: name,
       telefono: phone,
@@ -241,16 +321,12 @@ export class StateService {
       tipo_cliente: clientType,
       precios_especiales: specialPrices
     };
-    this.http.post<any>(`${APP_CONFIG.apiUrl}/clients`, body).subscribe({
-      next: (newClient) => {
-        this.loadClients();
-        if (newClient && newClient.id && specialPrices.length > 0) {
-          this.loadSpecialPricesForClient(newClient.id).subscribe();
-        }
-      },
-      error: (err) => console.error('Error creating client', err)
-    });
+    return this.http.post<any>(`${APP_CONFIG.apiUrl}/clients`, body).pipe(
+      map(row => this.mapClient(row)),
+      tap(client => this.clientsSubject.next([client, ...this.clientsSubject.value]))
+    );
   }
+
 
   updateClient(
     id: string,
@@ -277,41 +353,34 @@ export class StateService {
     );
   }
 
-  addProduct(name: string, basePrice: number, stock: number, unit: string): void {
+  addProduct(name: string, basePrice: number, stock: number, unit: string): Observable<unknown> {
     const body = {
       nombre: name,
       precio_base: basePrice,
       stock: stock,
       unidad: unit
     };
-    this.http.post<any>(`${APP_CONFIG.apiUrl}/products`, body).subscribe({
-      next: () => this.loadProducts(),
-      error: (err) => console.error('Error creating product', err)
-    });
+    return this.http.post<unknown>(`${APP_CONFIG.apiUrl}/products`, body).pipe(tap(() => this.loadProducts()));
   }
 
-  updateProductStock(productId: string, amount: number): void {
+  updateProductStock(productId: string, amount: number): Observable<unknown> {
     const body = {
       cantidad: amount
     };
-    this.http.patch<any>(`${APP_CONFIG.apiUrl}/products/${productId}/stock`, body).subscribe({
-      next: () => this.loadProducts(),
-      error: (err) => console.error('Error updating stock', err)
-    });
+    return this.http.patch<unknown>(`${APP_CONFIG.apiUrl}/products/${productId}/stock`, body).pipe(tap(() => this.loadProducts()));
   }
 
-  updateProductBasePrice(productId: string, newPrice: number): void {
+  updateProductBasePrice(productId: string, newPrice: number): Observable<unknown> {
     const body = {
       precio_base: newPrice
     };
-    this.http.put<any>(`${APP_CONFIG.apiUrl}/products/${productId}`, body).subscribe({
-      next: () => this.loadProducts(),
-      error: (err) => console.error('Error updating base price', err)
-    });
+    return this.http.put<unknown>(`${APP_CONFIG.apiUrl}/products/${productId}`, body).pipe(tap(() => this.loadProducts()));
   }
 
-  createOrder(orderData: any): void {
+  createOrder(orderData: any): Observable<Order> {
     const body: any = {
+      descripcion: orderData.description,
+      fecha_programada: orderData.scheduledDate,
       cliente_id: orderData.clientId,
       vendedor_id: orderData.vendorId || undefined,
       estado: orderData.status || undefined,
@@ -322,55 +391,35 @@ export class StateService {
         precio_aplicado: item.price
       }))
     };
-    this.http.post<any>(`${APP_CONFIG.apiUrl}/orders`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
-      },
-      error: (err) => console.error('Error creating order', err)
-    });
+    return this.http.post<any>(`${APP_CONFIG.apiUrl}/orders`, body).pipe(
+      tap(created => {
+        this.upsertOrderInState(created);
+        if (body.estado === 'delivered') this.loadProducts();
+      }),
+      map(created => this.mapOrder(created))
+    );
   }
 
-  updateOrderStatus(
-    orderId: string, 
-    status: OrderStatus, 
-    extra?: { failedReason?: string; paymentMethod?: 'efectivo' | 'qr' }
-  ): void {
-    // Actualización optimista local para respuesta visual instantánea
-    const currentOrders = this.ordersSubject.value;
-    const orderIndex = currentOrders.findIndex(o => o.id === orderId);
-    if (orderIndex !== -1) {
-      const updatedList = [...currentOrders];
-      const target = updatedList[orderIndex];
-      updatedList[orderIndex] = {
-        ...target,
-        status,
-        failedReason: extra?.failedReason !== undefined ? extra.failedReason : (status === 'delivered' ? undefined : target.failedReason),
-        deliveredAt: status === 'delivered' ? (target.deliveredAt || new Date().toISOString()) : (status === 'route' || status === 'loaded' ? null : target.deliveredAt),
-        paymentMethod: status === 'delivered' ? (extra?.paymentMethod || target.paymentMethod || 'efectivo') : null
-      };
-      this.ordersSubject.next(updatedList);
-    }
-
-    const body: any = {
+  updateOrderStatus(orderId: string, status: OrderStatus,
+    extra?: { failedReason?: string; paymentMethod?: 'efectivo' | 'qr' }): Observable<Order> {
+    const previousStatus = this.ordersSubject.value.find(o => o.id === orderId)?.status;
+    return this.http.patch<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}/status`, {
       estado: status,
-      motivo_falla: extra?.failedReason || undefined,
+      motivo_falla: extra?.failedReason,
       metodo_pago: status === 'delivered' ? (extra?.paymentMethod || 'efectivo') : null
-    };
-    this.http.patch<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}/status`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
-      },
-      error: (err) => {
-        console.error('Error updating order status', err);
-        this.loadOrders();
-      }
-    });
+    }).pipe(
+      tap(updated => {
+        this.upsertOrderInState(updated);
+        if (status === 'delivered' || previousStatus === 'delivered') this.loadProducts();
+      }),
+      map(updated => this.mapOrder(updated))
+    );
   }
 
-  updateOrder(updatedOrder: Order): void {
+  updateOrder(updatedOrder: Order): Observable<Order> {
     const body: any = {
+      descripcion: updatedOrder.description,
+      fecha_programada: updatedOrder.scheduledDate,
       cliente_id: updatedOrder.clientId,
       vendedor_id: updatedOrder.vendorId || null,
       estado: updatedOrder.status,
@@ -381,23 +430,22 @@ export class StateService {
         precio_aplicado: item.price
       }))
     };
-    this.http.put<any>(`${APP_CONFIG.apiUrl}/orders/${updatedOrder.id}`, body).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
-      },
-      error: (err) => console.error('Error updating order', err)
-    });
+    return this.http.put<any>(`${APP_CONFIG.apiUrl}/orders/${updatedOrder.id}`, body).pipe(
+      tap(updated => this.upsertOrderInState(updated)),
+      map(updated => this.mapOrder(updated))
+    );
   }
 
-  deleteOrder(orderId: string): void {
-    this.http.delete<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}`).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadProducts();
-      },
-      error: (err) => console.error('Error deleting order', err)
-    });
+  deleteOrder(orderId: string): Observable<void> {
+    const targetOrder = this.ordersSubject.value.find(o => o.id === orderId);
+    return this.http.delete<void>(`${APP_CONFIG.apiUrl}/orders/${orderId}`).pipe(tap(() => {
+      this.ordersSubject.next(this.ordersSubject.value.filter(o => o.id !== orderId));
+      if (targetOrder?.status === 'delivered') this.loadProducts();
+    }));
+  }
+
+  fetchOrder(id: string): Observable<Order> {
+    return this.http.get<any>(`${APP_CONFIG.apiUrl}/orders/${id}`).pipe(map(row => this.mapOrder(row)));
   }
 
   // ---- Closing Day and Reschedule operability ----
@@ -421,7 +469,7 @@ export class StateService {
 
     vendors.forEach(vendor => {
       const vendorOrders = orders.filter(
-        o => o.vendorId === vendor.id && this.getLocalDateString(new Date(o.createdAt)) === todayStr
+        o => o.vendorId === vendor.id && this.getOrderDate(o) === todayStr
       );
       if (vendorOrders.length > 0) {
         const total_pedidos = vendorOrders.length;
@@ -473,10 +521,14 @@ export class StateService {
     );
   }
 
+  getOrderDate(order: Order): string {
+    return order.scheduledDate || this.getLocalDateString(new Date(order.createdAt));
+  }
+
   getLocalDateString(date: Date = new Date()): string {
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 10);
-    return localISOTime;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/La_Paz', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(date);
   }
 
   // ---- Price rule helper ----

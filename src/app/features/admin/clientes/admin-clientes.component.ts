@@ -1,23 +1,39 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Observable, finalize } from 'rxjs';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Client, Order, OrderStatus, Product } from '../../../core/models/types';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import { FeedbackModalComponent } from '../../../core/components/feedback-modal/feedback-modal.component';
 import { DecimalInputDirective } from '../../../core/directives/decimal-input.directive';
 
 @Component({
   selector: 'app-admin-clientes',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
+  imports: [DialogFocusDirective, CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './admin-clientes.component.html',
   styleUrl: './admin-clientes.component.scss',
   standalone: true
 })
 export class AdminClientesComponent implements OnInit {
-  private stateService = inject(StateService);
+  private destroyRef = inject(DestroyRef);
+  readonly stateService = inject(StateService);
+  saving = false;
+  private save(request: Observable<unknown>, onSuccess: () => void) {
+    if (this.saving) return;
+    this.saving = true;
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => { this.saving = false; onSuccess(); },
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó la operación. Conservamos tus datos; revisa la conexión y los registros antes de reintentar.', 'error')
+    });
+  }
 
   clients: Client[] = [];
+  visibleCount = 40;
+  trackEntity(_index: number, entity: { id: string }): string { return entity.id; }
   filteredClients: Client[] = [];
   selectedClient: Client | null = null;
   clientOrders: Order[] = [];
@@ -59,16 +75,17 @@ export class AdminClientesComponent implements OnInit {
   editClientType = 'Particular';
 
   ngOnInit() {
-    this.stateService.clients$.subscribe(c => {
+    this.stateService.clients$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(c => {
       this.clients = c;
       this.applySearch();
     });
-    this.stateService.products$.subscribe(p => {
+    this.stateService.products$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => {
       this.products = p;
     });
   }
 
   onSearchChange() {
+    this.visibleCount = 40;
     this.applySearch();
   }
 
@@ -121,6 +138,7 @@ export class AdminClientesComponent implements OnInit {
     
     this.stateService.orders$.pipe(
       map(orders => orders.filter(o => o.clientId === client.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()))
+      , take(1)
     ).subscribe(orders => {
       this.clientOrders = orders;
       this.showDetailModal = true;
@@ -174,6 +192,7 @@ export class AdminClientesComponent implements OnInit {
   }
 
   saveEditClient(form?: NgForm) {
+    if (this.saving) return;
     if (form && form.invalid) {
       this.openFeedbackModal('Campos inválidos', 'Por favor completa todos los campos obligatorios con datos válidos.', 'warning');
       return;
@@ -186,13 +205,14 @@ export class AdminClientesComponent implements OnInit {
 
     const mapUrl = this.editClientLocationUrl.trim() || `https://maps.google.com/?q=${encodeURIComponent(this.editClientAddress.trim())}`;
 
+    this.saving = true;
     this.stateService.updateClient(this.editingClientId, {
       name: this.editClientName.trim(),
       phone: this.editClientPhone.trim(),
       address: this.editClientAddress.trim(),
       locationUrl: mapUrl,
       clientType: this.editClientType
-    }).subscribe({
+    }).pipe(finalize(() => this.saving = false)).subscribe({
       next: (updatedClient) => {
         if (this.selectedClient && this.selectedClient.id === this.editingClientId) {
           this.selectedClient = updatedClient;
@@ -244,17 +264,18 @@ export class AdminClientesComponent implements OnInit {
         precio_especial: Number(val)
       }));
 
-    this.stateService.addClient(
+    this.save(this.stateService.addClient(
       this.newClientName.trim(),
       this.newClientPhone.trim(),
       this.newClientAddress.trim(),
       mapUrl,
       this.newClientType,
       specialPricesToSend
-    );
+    ), () => {
 
     this.closeAddModal();
     this.openFeedbackModal('Cliente registrado', 'Cliente registrado con éxito.', 'success');
+    });
   }
 
   loadSpecialPrices(clientId: string) {

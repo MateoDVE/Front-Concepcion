@@ -1,4 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { StateService } from '../../../core/services/state.service';
@@ -7,12 +9,13 @@ import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [CommonModule, RouterLink],
+  imports: [DialogFocusDirective, CommonModule, RouterLink],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
   standalone: true
 })
 export class AdminDashboardComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private stateService = inject(StateService);
   private router = inject(Router);
 
@@ -21,7 +24,7 @@ export class AdminDashboardComponent implements OnInit {
   selectedOrder: Order | null = null;
 
   ngOnInit() {
-    this.stateService.kpis$.subscribe(k => this.kpis = k);
+    this.stateService.kpis$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(k => this.kpis = k);
     
     // Get recent 8 orders, sorted by date desc
     this.stateService.todayOrders$.pipe(
