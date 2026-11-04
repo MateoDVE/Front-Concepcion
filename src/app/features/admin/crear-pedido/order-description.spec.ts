@@ -9,7 +9,9 @@ describe('Order description form', () => {
   let state: any;
   beforeEach(() => {
     state = {
-      createOrder: jasmine.createSpy(), updateOrder: jasmine.createSpy(),
+      createOrder: jasmine.createSpy().and.returnValue(of({})), updateOrder: jasmine.createSpy().and.returnValue(of({})),
+      getLocalDateString: () => '2026-11-03', getOrderDate: () => '2026-11-03',
+      fetchOrder: () => of({ id: 'order', clientId: 'client', clientName: 'Cliente', items: [{ productId: 'product', name: 'Agua', quantity: 1, price: 10 }], description: 'Llamar al llegar', status: 'pending' }),
       orders$: of([{ id: 'order', clientId: 'client', items: [], description: 'Llamar al llegar' }]),
       loadSpecialPricesForClient: () => of([]),
     };
@@ -19,6 +21,7 @@ describe('Order description form', () => {
       { provide: ActivatedRoute, useValue: {} },
     ] });
     component = TestBed.runInInjectionContext(() => new AdminCrearPedidoComponent());
+    component.deliveryDate = '2026-11-03';
     component.selectedClient = { id: 'client', name: 'Cliente' } as any;
     component.orderItems = [{ productId: 'product', name: 'Agua', quantity: 1, price: 10, basePrice: 10 }];
   });
@@ -30,6 +33,7 @@ describe('Order description form', () => {
   });
 
   it('allows clearing a description when editing', () => {
+    component.loadOrderData('order', false);
     component.isEditing = true;
     component.editingOrderId = 'order';
     component.description = '';

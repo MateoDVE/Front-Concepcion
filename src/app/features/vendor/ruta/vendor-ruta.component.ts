@@ -1,3 +1,5 @@
+import { finalize } from 'rxjs';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
 import { Component, DestroyRef, PLATFORM_ID, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { combineLatest, interval } from 'rxjs';
@@ -10,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-vendor-ruta',
-  imports: [CommonModule, FormsModule],
+  imports: [DialogFocusDirective, CommonModule, FormsModule],
   templateUrl: './vendor-ruta.component.html',
   styleUrl: './vendor-ruta.component.scss',
   standalone: true
@@ -18,6 +20,23 @@ import { FormsModule } from '@angular/forms';
 export class VendorRutaComponent implements OnInit {
   private stateService = inject(StateService);
 
+  pendingOrders = new Set<string>();
+  actionError = '';
+  private changeStatus(id: string, status: OrderStatus, extra?: { failedReason?: string; paymentMethod?: 'efectivo' | 'qr' }, done?: () => void) {
+    if (this.pendingOrders.has(id)) return;
+    this.pendingOrders.add(id);
+    this.actionError = '';
+    this.stateService.updateOrderStatus(id, status, extra).pipe(finalize(() => this.pendingOrders.delete(id))).subscribe({
+      next: () => { this.expandedOrderIds.delete(id); done?.(); },
+      error: () => this.actionError = 'No se pudo confirmar el cambio. Actualiza la ruta para comprobar el estado antes de reintentar.'
+    });
+  }
+  getStatusLabel(status: OrderStatus): string {
+    return ({ pending: 'Pendiente', loaded: 'Cargado', route: 'En ruta', delivered: 'Entregado', failed: 'No entregado' })[status];
+  }
+  getAddress(order: Order): string {
+    return order.clientAddress || this.stateService.getClientById(order.clientId)?.address || 'Sin dirección registrada';
+  }
   activeVendor: Vendor | null = null;
   vendorOrders: Order[] = [];
   
@@ -52,7 +71,7 @@ export class VendorRutaComponent implements OnInit {
     if (isPlatformBrowser(this.platformId)) {
       this.stateService.loadTodayOrders();
       interval(30000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-        if (typeof document === 'undefined' || !document.hidden) {
+        if (!this.pendingOrders.size && (typeof document === 'undefined' || !document.hidden)) {
           this.stateService.loadTodayOrders();
         }
       });
@@ -97,15 +116,16 @@ export class VendorRutaComponent implements OnInit {
 
   // ---- Vendor Flow Actions ----
   markLoaded(orderId: string) {
-    this.stateService.updateOrderStatus(orderId, 'loaded');
+    this.changeStatus(orderId, 'loaded');
   }
 
   startDelivery(orderId: string) {
-    this.stateService.updateOrderStatus(orderId, 'route');
+    this.changeStatus(orderId, 'route');
   }
 
   openDeliverModal(order: Order, event?: Event) {
     event?.stopPropagation();
+    this.actionError = '';
     this.deliveringOrder = order;
     this.selectedPaymentMethod = 'efectivo';
     this.showDeliverModal = true;
@@ -123,10 +143,9 @@ export class VendorRutaComponent implements OnInit {
   confirmDelivery() {
     if (!this.deliveringOrder) return;
     this.expandedOrderIds.delete(this.deliveringOrder.id);
-    this.stateService.updateOrderStatus(this.deliveringOrder.id, 'delivered', {
+    this.changeStatus(this.deliveringOrder.id, 'delivered', {
       paymentMethod: this.selectedPaymentMethod
-    });
-    this.closeDeliverModal();
+    }, () => this.closeDeliverModal());
   }
 
   markDelivered(orderId: string) {
@@ -135,11 +154,12 @@ export class VendorRutaComponent implements OnInit {
       this.openDeliverModal(order);
     } else {
       this.expandedOrderIds.delete(orderId);
-      this.stateService.updateOrderStatus(orderId, 'delivered', { paymentMethod: 'efectivo' });
+      this.changeStatus(orderId, 'delivered', { paymentMethod: 'efectivo' });
     }
   }
 
   openFailModal(order: Order) {
+    this.actionError = '';
     this.failingOrder = order;
     this.failReason = 'Cliente Ausente';
     this.showFailModal = true;
@@ -153,12 +173,14 @@ export class VendorRutaComponent implements OnInit {
   submitFalla() {
     if (!this.failingOrder) return;
     this.expandedOrderIds.delete(this.failingOrder.id);
-    this.stateService.updateOrderStatus(this.failingOrder.id, 'failed', { failedReason: this.failReason });
-    this.closeFailModal();
+    this.changeStatus(this.failingOrder.id, 'failed', { failedReason: this.failReason }, () => this.closeFailModal());
   }
 
   openMap(order: Order) {
-    const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(order.clientName)}`;
+    if (!order.clientLocationUrl && this.getAddress(order) === 'Sin dirección registrada') {
+      this.actionError = 'Registra una dirección o ubicación para abrir el mapa.'; return;
+    }
+    const url = order.clientLocationUrl || `https://maps.google.com/?q=${encodeURIComponent(this.getAddress(order))}`;
     window.open(url, '_blank');
   }
 
@@ -166,7 +188,7 @@ export class VendorRutaComponent implements OnInit {
     event?.stopPropagation();
     const phone = this.getClientPhone(order);
     if (!phone) {
-      alert('El cliente no tiene un teléfono registrado.');
+      this.actionError = 'El cliente no tiene un teléfono registrado.';
       return;
     }
     const cleanPhone = phone.replace(/[^\d+]/g, '');

@@ -1,4 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Observable, finalize, of, switchMap, tap } from 'rxjs';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
@@ -8,13 +11,24 @@ import { DecimalInputDirective } from '../../../core/directives/decimal-input.di
 
 @Component({
   selector: 'app-admin-inventario',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
+  imports: [DialogFocusDirective, CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './admin-inventario.component.html',
   styleUrl: './admin-inventario.component.scss',
   standalone: true
 })
 export class AdminInventarioComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private stateService = inject(StateService);
+  saving = false;
+  private save(request: Observable<unknown>, onSuccess: () => void) {
+    if (this.saving) return;
+    this.saving = true;
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => { this.saving = false; onSuccess(); },
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó la operación. Conservamos tus datos; revisa la conexión y los registros antes de reintentar.', 'error')
+    });
+  }
 
   products: Product[] = [];
   selectedProduct: Product | null = null;
@@ -40,7 +54,7 @@ export class AdminInventarioComponent implements OnInit {
   private feedbackAfterClose: (() => void) | null = null;
 
   ngOnInit() {
-    this.stateService.products$.subscribe(p => this.products = p);
+    this.stateService.products$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => this.products = p);
   }
 
   formatCurrency(value: number): string {
@@ -86,15 +100,16 @@ export class AdminInventarioComponent implements OnInit {
       return;
     }
 
-    this.stateService.addProduct(
+    this.save(this.stateService.addProduct(
       this.newProdName.trim(),
       priceNum,
       this.newProdStock,
       this.newProdUnit
-    );
+    ), () => {
 
     this.closeAddModal();
     this.openFeedbackModal('Producto registrado', 'Producto registrado con éxito.', 'success');
+    });
   }
 
   openEditModal(product: Product) {
@@ -118,17 +133,20 @@ export class AdminInventarioComponent implements OnInit {
       return;
     }
 
-    // Apply price change if modified
-    if (priceNum !== this.selectedProduct.basePrice) {
-      this.stateService.updateProductBasePrice(this.selectedProduct.id, priceNum);
+    if (!Number.isInteger(this.editProdAddStock)) {
+      this.openFeedbackModal('Cantidad inválida', 'Introduce una cantidad entera.', 'warning');
+      return;
     }
-
-    // Apply stock adjustment if non-zero
-    if (this.editProdAddStock !== 0) {
-      this.stateService.updateProductStock(this.selectedProduct.id, this.editProdAddStock);
-    }
-
-    this.closeEditModal();
-    this.openFeedbackModal('Inventario actualizado', 'Inventario actualizado con éxito.', 'success');
+    const product = this.selectedProduct;
+    const amount = this.editProdAddStock;
+    const priceRequest = priceNum !== product.basePrice
+      ? this.stateService.updateProductBasePrice(product.id, priceNum).pipe(tap(() => product.basePrice = priceNum))
+      : of(null);
+    this.save(priceRequest.pipe(switchMap(() => amount !== 0
+      ? this.stateService.updateProductStock(product.id, amount).pipe(tap(() => this.editProdAddStock = 0))
+      : of(null))), () => {
+      this.closeEditModal();
+      this.openFeedbackModal('Inventario actualizado', 'Los cambios se guardaron correctamente.', 'success');
+    });
   }
 }

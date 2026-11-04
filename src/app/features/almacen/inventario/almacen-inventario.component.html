@@ -1,4 +1,5 @@
-<div class="container animate-fade-in pb-12">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in pb-12" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Page Header -->
   <div class="page-header mb-6">
     <h2 class="text-headline-xl text-primary">Ingreso de Producción y Stock</h2>
@@ -7,6 +8,7 @@
 
   <!-- Products Catalog Grid -->
   <section class="products-grid">
+    <p *ngIf="products.length === 0" class="text-muted" role="status">No hay productos disponibles para registrar producción. Solicita al administrador que revise el catálogo.</p>
     <!-- Product Card Item -->
     <div *ngFor="let product of products" (click)="openEditModal(product)" class="product-card animate-slide-up">
       <div class="product-card-header">
@@ -34,7 +36,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal && selectedProduct">
     <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeEditModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Registrar Producción</h3>
         <button class="modal-close-btn" (click)="closeEditModal()">

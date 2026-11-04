@@ -17,7 +17,7 @@ describe('Fast route reordering', () => {
     } as Order));
     state = {
       orders$: new BehaviorSubject(orders), vendors$: of([]),
-      getLocalDateString: () => '2026-11-02', loadOrders: jasmine.createSpy(),
+      getLocalDateString: () => '2026-11-02', getOrderDate: () => '2026-11-02', loadOrders: jasmine.createSpy(),
       reorderRoute: jasmine.createSpy().and.callFake(() => {
         const request = new Subject<void>(); requests.push(request); return request;
       })

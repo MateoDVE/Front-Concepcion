@@ -1,3 +1,5 @@
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Observable, finalize } from 'rxjs';
 import { afterNextRender, Component, DestroyRef, ElementRef, inject, Injector, NgZone, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { compareRouteOrders, isActiveStop } from '../../../core/models/route-order';
@@ -12,13 +14,23 @@ type FilterStatus = 'all' | OrderStatus;
 
 @Component({
   selector: 'app-admin-pedidos',
-  imports: [CommonModule, RouterLink, FormsModule, FeedbackModalComponent],
+  imports: [DialogFocusDirective, CommonModule, RouterLink, FormsModule, FeedbackModalComponent],
   templateUrl: './admin-pedidos.component.html',
   styleUrl: './admin-pedidos.component.scss',
   standalone: true
 })
 export class AdminPedidosComponent implements OnInit {
-  private stateService = inject(StateService);
+  readonly stateService = inject(StateService);
+  saving = false;
+  private save(request: Observable<unknown>, onSuccess: () => void) {
+    if (this.saving) return;
+    this.saving = true;
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => { this.saving = false; onSuccess(); },
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó la operación. Conservamos tus datos; revisa la conexión y los registros antes de reintentar.', 'error')
+    });
+  }
   private router = inject(Router);
 
   private destroyRef = inject(DestroyRef);
@@ -50,6 +62,8 @@ export class AdminPedidosComponent implements OnInit {
   private confirmedRouteIds: string[] = [];
   private routeSaveInFlight = false;
   orders: Order[] = [];
+  visibleCount = 40;
+  trackEntity(_index: number, entity: { id: string }): string { return entity.id; }
   filteredOrders: Order[] = [];
   selectedOrder: Order | null = null;
   showDeleteOrderModal = false;
@@ -83,7 +97,7 @@ export class AdminPedidosComponent implements OnInit {
   updateRouteOrders() {
     if (this.savingRoute) return;
     this.routeOrders = this.orders.filter(o => o.vendorId === this.selectedRouteVendor
-      && this.stateService.getLocalDateString(new Date(o.createdAt)) === this.selectedDate
+      && this.stateService.getOrderDate(o) === this.selectedDate
       && isActiveStop(o)).sort(compareRouteOrders);
     this.confirmedRouteIds = this.routeOrders.map(o => o.id);
   }
@@ -185,6 +199,7 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   onSearchChange() {
+    this.visibleCount = 40;
     this.applyFilterAndSearch();
   }
 
@@ -238,7 +253,7 @@ export class AdminPedidosComponent implements OnInit {
 
     // 1. Filtrar por fecha seleccionada (por defecto hoy, permite pasadas y futuras)
     if (this.selectedDate) {
-      result = result.filter(o => this.stateService.getLocalDateString(new Date(o.createdAt)) === this.selectedDate);
+      result = result.filter(o => this.stateService.getOrderDate(o) === this.selectedDate);
     }
 
     // 2. Filtrar por estado activo
@@ -342,15 +357,16 @@ export class AdminPedidosComponent implements OnInit {
   confirmDeleteOrder() {
     if (!this.pendingDeleteOrderId) return;
 
-    this.stateService.deleteOrder(this.pendingDeleteOrderId);
-    this.cancelDeleteOrder();
-    this.closeModal();
+    this.save(this.stateService.deleteOrder(this.pendingDeleteOrderId), () => {
+      this.cancelDeleteOrder();
+      this.closeModal();
+    });
   }
 
   get unfulfilledOrdersToday(): Order[] {
     const targetDate = this.selectedDate || this.stateService.getLocalDateString();
     return this.orders.filter(o => {
-      const orderDate = this.stateService.getLocalDateString(new Date(o.createdAt));
+      const orderDate = this.stateService.getOrderDate(o);
       return orderDate === targetDate && ['pending', 'loaded', 'failed', 'route'].includes(o.status);
     });
   }

@@ -1,4 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Observable, finalize } from 'rxjs';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Vendor, OrderStatus, Client, Product } from '../../../core/models/types';
@@ -8,13 +11,24 @@ import { DecimalInputDirective } from '../../../core/directives/decimal-input.di
 
 @Component({
   selector: 'app-vendor-ventas',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
+  imports: [DialogFocusDirective, CommonModule, FormsModule, FeedbackModalComponent, DecimalInputDirective],
   templateUrl: './vendor-ventas.component.html',
   styleUrl: './vendor-ventas.component.scss',
   standalone: true
 })
 export class VendorVentasComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private stateService = inject(StateService);
+  saving = false;
+  private save(request: Observable<unknown>, onSuccess: () => void) {
+    if (this.saving) return;
+    this.saving = true;
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => { this.saving = false; onSuccess(); },
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó la operación. Conservamos tus datos; revisa la conexión y los registros antes de reintentar.', 'error')
+    });
+  }
 
   activeVendor: Vendor | null = null;
   clients: Client[] = [];
@@ -43,6 +57,7 @@ export class VendorVentasComponent implements OnInit {
 
   // Form Fields for Direct Sale
   description = '';
+  scheduledDate = this.stateService.getLocalDateString();
   selectedClientId = '';
   selectedProductId = '';
   productQuantity = 1;
@@ -57,16 +72,16 @@ export class VendorVentasComponent implements OnInit {
   private feedbackAfterClose: (() => void) | null = null;
 
   ngOnInit() {
-    this.stateService.activeVendor$.subscribe(av => {
+    this.stateService.activeVendor$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(av => {
       this.activeVendor = av;
     });
 
-    this.stateService.clients$.subscribe(cls => {
+    this.stateService.clients$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(cls => {
       this.clients = cls;
       this.filterClients();
     });
 
-    this.stateService.products$.subscribe(prods => {
+    this.stateService.products$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(prods => {
       this.products = prods;
     });
   }
@@ -108,14 +123,15 @@ export class VendorVentasComponent implements OnInit {
       this.openFeedbackModal('Campos obligatorios', 'Por favor complete todos los campos obligatorios: Nombre, Teléfono y Dirección.', 'warning');
       return;
     }
-    this.stateService.addClient(
+    this.save(this.stateService.addClient(
       this.newClientName,
       this.newClientPhone,
       this.newClientAddress,
       this.newClientLocationUrl
-    );
+    ), () => {
     this.closeRegisterClientModal();
     this.openFeedbackModal('Cliente registrado', 'Cliente registrado con éxito.', 'success');
+    });
   }
 
   openEditClientModal() {
@@ -135,6 +151,7 @@ export class VendorVentasComponent implements OnInit {
   }
 
   saveEditClient() {
+    if (this.saving) return;
     if (!this.selectedClientId) return;
     if (!this.editClientName.trim() || !this.editClientPhone.trim() || !this.editClientAddress.trim()) {
       this.openFeedbackModal('Campos obligatorios', 'Por favor complete todos los campos obligatorios: Nombre, Teléfono y Dirección.', 'warning');
@@ -143,12 +160,13 @@ export class VendorVentasComponent implements OnInit {
 
     const mapUrl = this.editClientLocationUrl.trim() || `https://maps.google.com/?q=${encodeURIComponent(this.editClientAddress.trim())}`;
 
+    this.saving = true;
     this.stateService.updateClient(this.selectedClientId, {
       name: this.editClientName.trim(),
       phone: this.editClientPhone.trim(),
       address: this.editClientAddress.trim(),
       locationUrl: mapUrl
-    }).subscribe({
+    }).pipe(finalize(() => this.saving = false)).subscribe({
       next: (updatedClient) => {
         this.clientSearchQuery = updatedClient.name;
         this.closeEditClientModal();
@@ -175,7 +193,7 @@ export class VendorVentasComponent implements OnInit {
       this.openFeedbackModal('Producto requerido', 'Por favor seleccione un producto.', 'warning');
       return;
     }
-    if (this.productQuantity <= 0) {
+    if (!Number.isInteger(this.productQuantity) || this.productQuantity <= 0) {
       this.openFeedbackModal('Cantidad inválida', 'La cantidad debe ser mayor que cero.', 'warning');
       return;
     }
@@ -183,7 +201,10 @@ export class VendorVentasComponent implements OnInit {
     const product = this.products.find(p => p.id === this.selectedProductId);
     if (!product) return;
 
-    const priceVal = Number(this.productPrice) || 0;
+    const priceVal = Number(this.productPrice);
+    if (this.productPrice === null || !Number.isFinite(priceVal) || priceVal < 0) {
+      this.openFeedbackModal('Precio inválido', 'Introduce un precio mayor o igual a cero.', 'warning'); return;
+    }
     const existingItem = this.saleItems.find(item => item.product.id === product.id);
     if (existingItem) {
       existingItem.quantity += this.productQuantity;
@@ -228,7 +249,11 @@ export class VendorVentasComponent implements OnInit {
       return;
     }
 
+    if (status === 'pending' && !/^\d{4}-\d{2}-\d{2}$/.test(this.scheduledDate)) {
+      this.openFeedbackModal('Fecha requerida', 'Selecciona una fecha válida para el pedido.', 'warning'); return;
+    }
     const orderData = {
+      scheduledDate: status === 'pending' ? this.scheduledDate : this.stateService.getLocalDateString(),
       description: this.description.trim() || null,
       clientId: this.selectedClientId,
       vendorId: this.activeVendor.id,
@@ -241,7 +266,7 @@ export class VendorVentasComponent implements OnInit {
       }))
     };
 
-    this.stateService.createOrder(orderData);
+    this.save(this.stateService.createOrder(orderData), () => {
     const isVenta = status === 'delivered';
     const messageTitle = isVenta ? 'Venta registrada' : 'Pedido registrado';
     const messageContent = isVenta 
@@ -250,6 +275,7 @@ export class VendorVentasComponent implements OnInit {
 
     this.openFeedbackModal(messageTitle, messageContent, 'success', () => {
       this.description = '';
+      this.scheduledDate = this.stateService.getLocalDateString();
       this.selectedClientId = '';
       this.clientSearchQuery = '';
       this.selectedProductId = '';
@@ -258,6 +284,7 @@ export class VendorVentasComponent implements OnInit {
       this.selectedPaymentMethod = 'efectivo';
       this.saleItems = [];
       this.filterClients();
+    });
     });
   }
 

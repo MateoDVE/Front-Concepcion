@@ -1,4 +1,7 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
+import { Observable, finalize } from 'rxjs';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
@@ -7,13 +10,24 @@ import { FeedbackModalComponent } from '../../../core/components/feedback-modal/
 
 @Component({
   selector: 'app-almacen-inventario',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent],
+  imports: [DialogFocusDirective, CommonModule, FormsModule, FeedbackModalComponent],
   templateUrl: './almacen-inventario.component.html',
   styleUrl: './almacen-inventario.component.scss',
   standalone: true
 })
 export class AlmacenInventarioComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private stateService = inject(StateService);
+  saving = false;
+  private save(request: Observable<unknown>, onSuccess: () => void) {
+    if (this.saving) return;
+    this.saving = true;
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => { this.saving = false; onSuccess(); },
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó la operación. Conservamos tus datos; revisa la conexión y los registros antes de reintentar.', 'error')
+    });
+  }
 
   products: Product[] = [];
   selectedProduct: Product | null = null;
@@ -32,7 +46,7 @@ export class AlmacenInventarioComponent implements OnInit {
   private feedbackAfterClose: (() => void) | null = null;
 
   ngOnInit() {
-    this.stateService.products$.subscribe(p => this.products = p);
+    this.stateService.products$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => this.products = p);
   }
 
   formatCurrency(value: number): string {
@@ -74,9 +88,10 @@ export class AlmacenInventarioComponent implements OnInit {
     }
 
     // Apply stock adjustment
-    this.stateService.updateProductStock(this.selectedProduct.id, this.editProdAddStock);
+    this.save(this.stateService.updateProductStock(this.selectedProduct.id, this.editProdAddStock), () => {
 
     this.closeEditModal();
     this.openFeedbackModal('Stock Incrementado', 'Se ha registrado la producción e incrementado el inventario.', 'success');
+    });
   }
 }

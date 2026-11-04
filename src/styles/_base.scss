@@ -15,6 +15,8 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
+  scroll-padding-top: 88px;
+  scroll-padding-bottom: 100px;
 }
 
 body {
@@ -26,6 +28,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   overscroll-behavior: none;
 }
@@ -58,6 +61,72 @@ button {
   outline: none;
   -webkit-appearance: none;
   appearance: none;
+}
+
+button:focus-visible, a:focus-visible, [tabindex="0"]:focus-visible {
+  outline: 3px solid $color-primary-container;
+  outline-offset: 3px;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.save-progress, .data-status {
+  padding: 0.75rem 1rem;
+  border-radius: $radius-sm;
+  background: $color-surface-container;
+  color: $color-on-surface;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.save-progress {
+  position: fixed;
+  top: calc(4.5rem + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+  box-shadow: $shadow-md;
+}
+
+.data-status--error { background: $color-error-container; color: $color-on-error-container; }
+
+[inert] { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-fade-in, .animate-slide-up, .animate-slide-in-right { animation: none !important; }
+}
+
+button, a, [role='button'] { touch-action: manipulation; }
+button, [role='button'] { -webkit-user-select: none; user-select: none; }
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid $color-primary-container;
+  outline-offset: 3px;
+}
+::selection { background: #dbeafe; color: $color-primary; }
+input, select, textarea { scroll-margin-block: 100px; min-width: 0; }
+select:not([multiple]) { appearance: auto; }
+button:disabled { cursor: not-allowed; }
+.skip-link {
+  position: fixed; top: 8px; left: 16px; transform: translateY(-160%);
+  padding: 12px 20px; background: $color-primary; color: white; z-index: 100;
+  border-radius: 8px;
+  &:focus { transform: translateY(0); }
+}
+@media (pointer: coarse) {
+  input, select, textarea { font-size: max(1rem, 16px) !important; }
+  button, .btn { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 input, select, textarea {
@@ -130,11 +199,11 @@ input, select, textarea {
 
 /* ---- Global Utility Classes ---- */
 .animate-fade-in {
-  animation: fadeIn $transition-slow forwards;
+  animation: none;
 }
 
 .animate-slide-up {
-  animation: slideUp $transition-slow cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: none;
 }
 
 // Typography Helpers

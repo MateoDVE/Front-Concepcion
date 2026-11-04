@@ -1,3 +1,4 @@
+import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -33,7 +34,7 @@ interface MonthlySummary {
 
 @Component({
   selector: 'app-admin-reporte',
-  imports: [CommonModule, FormsModule, FeedbackModalComponent, ClientDeliveriesComponent],
+  imports: [DialogFocusDirective, CommonModule, FormsModule, FeedbackModalComponent, ClientDeliveriesComponent],
   templateUrl: './admin-reporte.component.html',
   styleUrl: './admin-reporte.component.scss',
   standalone: true
@@ -127,7 +128,7 @@ export class AdminReporteComponent implements OnInit {
   computeTodayReport() {
     // Filter only today's orders for the active (open) day
     const todayStr = this.getLocalDateString();
-    const todayOrders = this.orders.filter(o => this.getLocalDateString(new Date(o.createdAt)) === todayStr);
+    const todayOrders = this.orders.filter(o => this.stateService.getOrderDate(o) === todayStr);
 
     this.totalOrders = todayOrders.length;
     this.deliveredCount = todayOrders.filter(o => o.status === 'delivered').length;
@@ -322,7 +323,7 @@ export class AdminReporteComponent implements OnInit {
 
   computeHistoricalOrdersSummary() {
     const histOrders = this.orders.filter(o =>
-      this.excelService.formatDate(o.createdAt) === this.historyDate
+      this.stateService.getOrderDate(o) === this.historyDate
     );
     this.historyFailedOrders = histOrders.filter(o => o.status === 'failed');
     this.historyDeliveredOrders = histOrders.filter(o => o.status === 'delivered');
@@ -390,7 +391,7 @@ export class AdminReporteComponent implements OnInit {
   groupHistoryByMonth(records: any[], currentOrders?: Order[]) {
     const currentTotals = new Map<string, { total: number; delivered: number; failed: number }>();
     currentOrders?.forEach(order => {
-      const month = this.getLocalDateString(new Date(order.createdAt)).slice(0, 7);
+      const month = this.stateService.getOrderDate(order).slice(0, 7);
       const totals = currentTotals.get(month) ?? { total: 0, delivered: 0, failed: 0 };
       totals.total++;
       if (order.status === 'delivered') totals.delivered++;
@@ -479,7 +480,7 @@ export class AdminReporteComponent implements OnInit {
   exportCurrentMonth(month: MonthlySummary, event?: Event): void {
     event?.stopPropagation();
     const monthOrders = this.orders.filter(o =>
-      this.excelService.formatDate(o.createdAt).startsWith(month.monthKey)
+      this.stateService.getOrderDate(o).startsWith(month.monthKey)
     );
     this.excelService.exportMonth(month, monthOrders);
   }
@@ -491,7 +492,7 @@ export class AdminReporteComponent implements OnInit {
 
   exportHistoricalDay(): void {
     const dayOrders = this.orders.filter(o =>
-      this.excelService.formatDate(o.createdAt) === this.historyDate
+      this.stateService.getOrderDate(o) === this.historyDate
     );
     this.excelService.exportDailyReport(
       this.historyDate,

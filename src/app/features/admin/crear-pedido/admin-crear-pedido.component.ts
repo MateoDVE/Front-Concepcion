@@ -1,4 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { finalize, take, Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
@@ -26,6 +28,13 @@ export class AdminCrearPedidoComponent implements OnInit {
   private stateService = inject(StateService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  private destroyRef = inject(DestroyRef);
+  private orderLoad?: Subscription;
+  private originalOrder: Order | null = null;
+  saving = false;
+  loadingOrder = false;
+  loadError = false;
 
   // Catalogs
   clients: Client[] = [];
@@ -55,21 +64,21 @@ export class AdminCrearPedidoComponent implements OnInit {
   private feedbackAfterClose: (() => void) | null = null;
 
   ngOnInit() {
-    this.stateService.clients$.subscribe(c => this.clients = c);
-    this.stateService.products$.subscribe(p => this.products = p);
-    this.stateService.vendors$.subscribe(v => {
+    this.stateService.clients$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(c => this.clients = c);
+    this.stateService.products$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(p => this.products = p);
+    this.stateService.vendors$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(v => {
       this.vendors = v.filter(vendor => vendor.active !== false);
-      if (this.vendors.length > 0 && !this.selectedVendorId) {
+      if (this.vendors.length > 0 && !this.selectedVendorId && !this.originalOrder && !this.loadingOrder) {
         this.selectedVendorId = this.vendors[0].id;
       }
     });
 
     // Default delivery date to today
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.stateService.getLocalDateString();
     this.deliveryDate = today;
 
     // Check query params for edit/reopen
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const orderId = params['orderId'];
       const reopen = params['reopen'] === 'true';
 
@@ -79,15 +88,28 @@ export class AdminCrearPedidoComponent implements OnInit {
     });
   }
 
-  loadOrderData(orderId: string, reopen: boolean) {
-    this.stateService.orders$.subscribe(orders => {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
+  get retainedVendorName(): string | null {
+    return this.selectedVendorId && !this.vendors.some(v => v.id === this.selectedVendorId)
+      ? this.originalOrder?.vendorName || 'Vendedor asignado' : null;
+  }
 
-      this.selectedClient = this.clients.find(c => c.id === order.clientId) || null;
+  get isDeliveredOrder(): boolean { return this.isEditing && this.originalOrder?.status === 'delivered'; }
+
+  loadOrderData(orderId: string, reopen: boolean) {
+    this.orderLoad?.unsubscribe();
+    this.loadingOrder = true;
+    this.loadError = false;
+    this.orderLoad = this.stateService.fetchOrder(orderId).pipe(
+      take(1), takeUntilDestroyed(this.destroyRef), finalize(() => this.loadingOrder = false)
+    ).subscribe({ next: (order) => {
+      this.originalOrder = order;
+      this.selectedClient = this.clients.find(c => c.id === order.clientId) || {
+        id: order.clientId, name: order.clientName, phone: order.clientPhone || '',
+        address: order.clientAddress || '', locationUrl: order.clientLocationUrl || ''
+      };
       if (this.selectedClient) {
         this.searchClientQuery = this.selectedClient.name;
-        this.stateService.loadSpecialPricesForClient(this.selectedClient.id).subscribe();
+        this.stateService.loadSpecialPricesForClient(this.selectedClient.id).subscribe({ error: () => {} });
       }
 
       this.orderItems = order.items.map(item => {
@@ -108,18 +130,21 @@ export class AdminCrearPedidoComponent implements OnInit {
         this.isReopening = true;
         this.isEditing = false;
         // set date to today for reopening
-        this.deliveryDate = new Date().toISOString().split('T')[0];
+        this.deliveryDate = this.stateService.getLocalDateString();
       } else {
         this.isEditing = true;
         this.isReopening = false;
         this.editingOrderId = order.id;
         if (order.createdAt) {
-          this.deliveryDate = order.createdAt.split('T')[0];
+          this.deliveryDate = this.stateService.getOrderDate(order);
         }
       }
 
       this.calculateTotal();
-    });
+    }, error: () => {
+      this.loadError = true;
+      this.openFeedbackModal('No se pudo cargar el pedido', 'Vuelve a abrir el pedido para reintentar. Los datos no se han modificado.', 'error');
+    }});
   }
 
   // ---- Client Search & Selection ----
@@ -147,6 +172,7 @@ export class AdminCrearPedidoComponent implements OnInit {
     // first fetching special prices asynchronously to sync cache.
     this.stateService.loadSpecialPricesForClient(client.id).subscribe({
       next: () => {
+        if (this.selectedClient?.id !== client.id) return;
         this.orderItems.forEach(item => {
           const suggestedPrice = this.stateService.getLastPriceApplied(client.id, item.productId);
           item.price = suggestedPrice;
@@ -154,6 +180,7 @@ export class AdminCrearPedidoComponent implements OnInit {
         this.calculateTotal();
       },
       error: (err) => {
+        if (this.selectedClient?.id !== client.id) return;
         console.error('Error al cargar precios especiales:', err);
         // Fallback simple si la carga falla
         this.orderItems.forEach(item => {
@@ -236,6 +263,7 @@ export class AdminCrearPedidoComponent implements OnInit {
 
   // ---- Save Form ----
   saveOrder() {
+    if (this.saving || this.loadingOrder || this.loadError) return;
     if (this.description.length > 1000) {
       this.openFeedbackModal('Descripción demasiado larga', 'La descripción admite hasta 1.000 caracteres.', 'warning');
       return;
@@ -252,25 +280,30 @@ export class AdminCrearPedidoComponent implements OnInit {
 
     // Validate quantities and prices
     for (const item of this.orderItems) {
-      if (item.quantity <= 0) {
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
         this.openFeedbackModal('Cantidad inválida', `La cantidad para ${item.name} debe ser mayor a 0.`, 'warning');
         return;
       }
       const priceNum = Number(item.price);
-      if (isNaN(priceNum) || priceNum < 0) {
+      if (item.price === null || !Number.isFinite(priceNum) || priceNum < 0) {
         this.openFeedbackModal('Precio inválido', `El precio para ${item.name} no puede ser negativo.`, 'warning');
         return;
       }
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(this.deliveryDate) || !Number.isFinite(Date.parse(this.deliveryDate))) {
+      this.openFeedbackModal('Fecha requerida', 'Selecciona una fecha de entrega válida.', 'warning');
+      return;
+    }
     const assignedVendor = this.vendors.find(v => v.id === this.selectedVendorId);
 
     const orderData = {
       description: this.description.trim() || null,
+      scheduledDate: this.deliveryDate,
       clientId: this.selectedClient.id,
       clientName: this.selectedClient.name,
-      vendorId: assignedVendor ? assignedVendor.id : null,
-      vendorName: assignedVendor ? assignedVendor.name : null,
+      vendorId: this.selectedVendorId || null,
+      vendorName: assignedVendor?.name ?? this.originalOrder?.vendorName ?? null,
       status: 'pending' as const,
       items: this.orderItems.map(item => ({
         productId: item.productId,
@@ -281,26 +314,19 @@ export class AdminCrearPedidoComponent implements OnInit {
       total: this.orderTotal
     };
 
-    if (this.isEditing && this.editingOrderId) {
-      // Modifying existing order
-      const updatedOrder: Order = {
-        ...orderData,
-        id: this.editingOrderId,
-        createdAt: new Date().toISOString(),
-        deliveredAt: null
-      };
-      this.stateService.updateOrder(updatedOrder);
-      this.openFeedbackModal('Pedido actualizado', 'Pedido actualizado con éxito.', 'success', () => this.router.navigate(['/admin/dashboard']));
-    } else {
-      // Creating a new order (normal or reopened)
-      this.stateService.createOrder(orderData);
-      this.openFeedbackModal(
-        this.isReopening ? 'Pedido reabierto' : 'Pedido registrado',
-        this.isReopening ? 'Pedido reabierto y registrado con éxito.' : 'Pedido registrado con éxito.',
-        'success',
-        () => this.router.navigate(['/admin/dashboard'])
-      );
-    }
+    this.saving = true;
+    const request = this.isEditing && this.editingOrderId && this.originalOrder
+      ? this.stateService.updateOrder({ ...this.originalOrder, ...orderData,
+          status: this.originalOrder.status, paymentMethod: this.originalOrder.paymentMethod })
+      : this.stateService.createOrder(orderData);
+    request.pipe(finalize(() => this.saving = false)).subscribe({
+      next: () => this.openFeedbackModal(
+        this.isEditing ? 'Pedido actualizado' : 'Pedido registrado',
+        'Los datos se guardaron correctamente.', 'success',
+        () => this.router.navigate(['/admin/dashboard'])),
+      error: () => this.openFeedbackModal('No se pudo guardar',
+        'El servidor no confirmó el guardado. Conservamos tus datos; comprueba la conexión y revisa los pedidos antes de reintentar.', 'error')
+    });
   }
 
   formatCurrency(value: number): string {

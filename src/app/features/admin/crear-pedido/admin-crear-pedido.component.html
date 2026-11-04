@@ -1,7 +1,8 @@
-<div class="container animate-fade-in pb-12">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in pb-12" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Header Bar -->
   <div class="page-header mb-6 flex items-center gap-4">
-    <a routerLink="/admin/dashboard" class="back-btn">
+    <a routerLink="/admin/dashboard" class="back-btn" aria-label="Volver al resumen">
       <span class="material-symbols-outlined">arrow_back</span>
     </a>
     <div>
@@ -12,25 +13,26 @@
     </div>
   </div>
 
-  <div class="form-container">
+  <p *ngIf="loadingOrder" role="status">Cargando pedido…</p>
+  <div class="form-container" [attr.inert]="loadingOrder || loadError ? '' : null">
     <!-- CLIENTE Section -->
     <section class="form-section">
       <h3 class="section-title text-label-lg uppercase tracking-wider text-muted">Cliente</h3>
-      
+
       <!-- Search Input -->
       <div class="relative search-client-wrap mb-4" *ngIf="!selectedClient">
         <span class="material-symbols-outlined input-icon">search</span>
-        <input type="text" 
-               placeholder="Buscar por nombre o teléfono de cliente..." 
+        <input type="text"
+               aria-label="Buscar cliente por nombre o teléfono" (keydown.escape)="showClientSuggestions = false" placeholder="Buscar por nombre o teléfono de cliente..."
                [(ngModel)]="searchClientQuery"
                (ngModelChange)="onClientSearchChange()"
                (focus)="onClientSearchChange()"
                class="form-input form-input--with-icon w-full" />
-               
+
         <!-- Suggestions dropdown -->
         <div class="suggestions-dropdown" *ngIf="showClientSuggestions">
-          <button *ngFor="let client of filteredClients" 
-                  class="suggestion-item" 
+          <button *ngFor="let client of filteredClients"
+                  class="suggestion-item"
                   (click)="selectClient(client)">
             <span class="material-symbols-outlined">person</span>
             <div class="suggestion-info">
@@ -62,17 +64,17 @@
     <!-- DETALLE DEL PEDIDO Section -->
     <section class="form-section">
       <h3 class="section-title text-label-lg uppercase tracking-wider text-muted">Detalle del Pedido</h3>
-      
+
       <div class="space-y-4 mb-4">
         <!-- Product Cards -->
         <div *ngFor="let item of orderItems; let i = index" class="product-card animate-slide-up">
           <div class="product-card-header">
             <div class="form-group flex-1">
-              <select [(ngModel)]="item.productId" (ngModelChange)="onProductChange(i)" class="form-select">
+              <select [attr.aria-label]="'Producto ' + (i + 1)" [(ngModel)]="item.productId" (ngModelChange)="onProductChange(i)" class="form-select">
                 <option *ngFor="let prod of products" [value]="prod.id">{{ prod.name }} (Bs. {{ prod.basePrice }})</option>
               </select>
             </div>
-            
+
             <button class="delete-item-btn" (click)="removeOrderItem(i)" aria-label="Eliminar item">
               <span class="material-symbols-outlined">delete</span>
             </button>
@@ -82,7 +84,7 @@
             <!-- Quantity -->
             <div class="form-group flex-1">
               <label class="text-caption text-muted uppercase">Cantidad</label>
-              <input type="number" [(ngModel)]="item.quantity" inputmode="numeric" pattern="[0-9]*" (ngModelChange)="calculateTotal()" class="form-input text-center" min="1" />
+              <input [attr.aria-label]="'Cantidad de ' + item.name" type="number" [(ngModel)]="item.quantity" inputmode="numeric" pattern="[0-9]*" (ngModelChange)="calculateTotal()" class="form-input text-center" min="1" />
             </div>
 
             <!-- Price -->
@@ -90,7 +92,7 @@
               <label class="text-caption text-muted uppercase">Precio Venta (Sugerido)</label>
               <div class="price-input-wrap">
                 <span class="price-prefix text-body-sm font-semibold text-muted">Bs.</span>
-                <input type="text" appDecimalInput [(ngModel)]="item.price" (ngModelChange)="calculateTotal()" class="form-input text-right font-bold" min="0" placeholder="0.00" />
+                <input [attr.aria-label]="'Precio de ' + item.name" type="text" appDecimalInput [(ngModel)]="item.price" (ngModelChange)="calculateTotal()" class="form-input text-right font-bold" min="0" placeholder="0.00" />
               </div>
               <span *ngIf="selectedClient && item.price !== item.basePrice" class="price-notice text-caption">
                 Base: Bs. {{ item.basePrice }}
@@ -122,7 +124,9 @@
         <label class="text-label-lg uppercase tracking-wider text-muted mb-2 block">Vendedor Asignado</label>
         <div class="select-vendor-wrap">
           <span class="material-symbols-outlined input-icon">person</span>
-          <select [(ngModel)]="selectedVendorId" class="form-select pl-10">
+          <select aria-label="Vendedor asignado" [(ngModel)]="selectedVendorId" class="form-select pl-10">
+            <option value="">Sin asignar</option>
+            <option *ngIf="retainedVendorName" [value]="selectedVendorId">{{ retainedVendorName }} (asignación actual)</option>
             <option *ngFor="let vendor of vendors" [value]="vendor.id">{{ vendor.name }}</option>
           </select>
         </div>
@@ -130,10 +134,10 @@
 
       <!-- Delivery Date -->
       <div class="form-group">
-        <label class="text-label-lg uppercase tracking-wider text-muted mb-2 block">Fecha de Entrega</label>
+        <label class="text-label-lg uppercase tracking-wider text-muted mb-2 block">Fecha programada de entrega</label>
         <div class="date-input-wrap">
           <span class="material-symbols-outlined input-icon">calendar_today</span>
-          <input type="date" [(ngModel)]="deliveryDate" class="form-input pl-10" />
+          <input aria-label="Fecha programada de entrega" type="date" [(ngModel)]="deliveryDate" [disabled]="isDeliveredOrder" class="form-input pl-10" />
         </div>
       </div>
     </section>
@@ -147,7 +151,7 @@
 
       <div class="actions-row flex gap-4">
         <a routerLink="/admin/dashboard" class="btn btn--outline flex-1">Cancelar</a>
-        <button class="btn btn--primary flex-[1.5]" (click)="saveOrder()">
+        <button class="btn btn--primary flex-[1.5]" [disabled]="saving || loadingOrder || loadError" (click)="saveOrder()">
           <span class="material-symbols-outlined">save</span> Guardar
         </button>
       </div>

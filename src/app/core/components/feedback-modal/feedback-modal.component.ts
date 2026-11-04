@@ -1,3 +1,4 @@
+import { DialogFocusDirective } from '../../directives/dialog-focus.directive';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
@@ -6,12 +7,12 @@ type FeedbackTone = 'info' | 'success' | 'warning' | 'error';
 @Component({
   selector: 'app-feedback-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DialogFocusDirective],
   template: `
     <div class="modal-backdrop-wrap animate-fade-in" *ngIf="open">
       <div class="modal-backdrop-overlay" (click)="closed.emit()"></div>
 
-      <div class="modal-card animate-slide-up feedback-modal" [ngClass]="toneClass" role="dialog" aria-modal="true">
+      <div class="modal-card animate-slide-up feedback-modal" [ngClass]="toneClass" appDialogFocus (dialogEscape)="closed.emit()" [attr.aria-label]="title">
         <div class="modal-header mb-4">
           <div class="feedback-modal__header-copy">
             <span class="feedback-modal__icon material-symbols-outlined">{{ iconName }}</span>

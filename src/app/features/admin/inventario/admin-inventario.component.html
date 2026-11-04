@@ -1,4 +1,5 @@
-<div class="container animate-fade-in pb-12">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in pb-12" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Page Header -->
   <div class="page-header mb-6">
     <h2 class="text-headline-xl text-primary">Inventario y Precios</h2>
@@ -43,7 +44,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showAddModal">
     <div class="modal-backdrop-overlay" (click)="closeAddModal()"></div>
     
-    <form #productForm="ngForm" (ngSubmit)="saveProduct(productForm)" novalidate class="modal-card animate-slide-up">
+    <form appDialogFocus (dialogEscape)="closeAddModal()" aria-label="Formulario" #productForm="ngForm" (ngSubmit)="saveProduct(productForm)" novalidate class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Registrar Producto</h3>
         <button type="button" class="modal-close-btn" (click)="closeAddModal()">
@@ -128,7 +129,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditModal && selectedProduct">
     <div class="modal-backdrop-overlay" (click)="closeEditModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeEditModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Ajustar Inventario</h3>
         <button class="modal-close-btn" (click)="closeEditModal()">

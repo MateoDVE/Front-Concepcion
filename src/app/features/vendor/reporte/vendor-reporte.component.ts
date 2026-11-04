@@ -1,9 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StateService } from '../../../core/services/state.service';
 import { Order, Vendor } from '../../../core/models/types';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-vendor-reporte',
@@ -13,6 +14,7 @@ import { map } from 'rxjs/operators';
   standalone: true
 })
 export class VendorReporteComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private stateService = inject(StateService);
 
   activeVendor: Vendor | null = null;
@@ -30,12 +32,12 @@ export class VendorReporteComponent implements OnInit {
 
   ngOnInit() {
     this.selectedDate = this.getLocalDateString();
-    this.stateService.activeVendor$.subscribe(av => {
+    this.stateService.activeVendor$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(av => {
       this.activeVendor = av;
       this.loadVendorReport();
     });
 
-    this.stateService.orders$.subscribe(() => {
+    this.stateService.orders$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.loadVendorReport();
     });
   }
@@ -46,8 +48,8 @@ export class VendorReporteComponent implements OnInit {
     this.stateService.orders$.pipe(
       map(orders => orders.filter(o => 
         o.vendorId === this.activeVendor?.id &&
-        this.getLocalDateString(new Date(o.createdAt)) === this.selectedDate
-      ))
+        this.stateService.getOrderDate(o) === this.selectedDate
+      )), take(1)
     ).subscribe(orders => {
       this.vendorOrders = orders;
       this.computeMetrics();

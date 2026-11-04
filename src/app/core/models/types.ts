@@ -51,6 +51,7 @@ export interface Order {
   clientAddress?: string;
   vendorName: string | null;
   status: OrderStatus;
+  scheduledDate?: string; // YYYY-MM-DD, operational day in Bolivia
   createdAt: string; // ISO string or timestamp
   deliveredAt: string | null;
   paymentMethod?: PaymentMethod | null;

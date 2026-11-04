@@ -1,4 +1,5 @@
-<div class="container animate-fade-in">
+<div *ngIf="saving" class="save-progress" role="status">Guardando cambios…</div>
+<div class="container animate-fade-in" [attr.inert]="saving ? '' : null" [attr.aria-busy]="saving">
   <!-- Page Header -->
   <div class="page-greeting mb-4">
     <h2 class="text-headline-lg font-bold text-primary">Venta Directa</h2>
@@ -117,6 +118,11 @@
           <span id="sale-description-help" class="text-caption text-muted">{{ description.length }}/1000 caracteres</span>
         </div>
 
+        <div class="form-group mb-4">
+          <label for="pending-sale-date">Fecha programada del pedido</label>
+          <input id="pending-sale-date" type="date" [(ngModel)]="scheduledDate" aria-describedby="pending-sale-date-help" class="form-input w-full" />
+          <p id="pending-sale-date-help" class="text-body-sm text-muted">Se aplica al confirmar un pedido pendiente. Una venta realizada se registra hoy.</p>
+        </div>
         <!-- Total Price Display -->
         <div class="flex justify-between items-center pt-3 border-t mt-3 mb-4">
           <span class="font-bold text-body-md text-primary">Total Venta</span>
@@ -168,7 +174,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showRegisterClientModal">
     <div class="modal-backdrop-overlay" (click)="closeRegisterClientModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeRegisterClientModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Registrar Cliente</h3>
         <button class="modal-close-btn" (click)="closeRegisterClientModal()">
@@ -211,7 +217,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showEditClientModal">
     <div class="modal-backdrop-overlay" (click)="closeEditClientModal()"></div>
     
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="closeEditClientModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Editar Cliente</h3>
         <button class="modal-close-btn" (click)="closeEditClientModal()">

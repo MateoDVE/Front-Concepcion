@@ -750,7 +750,7 @@
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showCloseDayModal">
     <div class="modal-backdrop-overlay" (click)="cancelCloseDay()"></div>
 
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelCloseDay()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary">Cierre de Jornada</h3>
         <button class="modal-close-btn" (click)="cancelCloseDay()">
@@ -785,7 +785,7 @@
   <!-- Modal Confirmar Mover al Día Siguiente desde Reporte -->
   <div class="modal-backdrop-wrap animate-fade-in" *ngIf="showMoveModal">
     <div class="modal-backdrop-overlay" (click)="cancelMoveModal()"></div>
-    <div class="modal-card animate-slide-up">
+    <div appDialogFocus (dialogEscape)="cancelMoveModal()" aria-label="Ventana de detalle" class="modal-card animate-slide-up">
       <div class="modal-header mb-4">
         <h3 class="text-headline-md font-bold text-primary flex items-center gap-2">
           <span class="material-symbols-outlined text-primary">update</span>

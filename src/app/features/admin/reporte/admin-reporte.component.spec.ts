@@ -16,7 +16,7 @@ describe('AdminReporteComponent: fechas de jornada', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [{ provide: StateService, useValue: { clients$: of([]) } }, ExcelExportService]
+      providers: [{ provide: StateService, useValue: { clients$: of([]), getOrderDate: (o: Order) => o.scheduledDate || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/La_Paz' }).format(new Date(o.createdAt)) } }, ExcelExportService]
     });
     excel = TestBed.inject(ExcelExportService);
     component = TestBed.runInInjectionContext(() => new AdminReporteComponent());
