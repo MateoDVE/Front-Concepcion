@@ -125,6 +125,9 @@ describe('Fast route reordering', () => {
     expect(fixture.componentInstance.draggingRoute).toBeTrue();
     const preview = document.querySelector('.cdk-drag-preview') as HTMLElement;
     expect(getComputedStyle(preview).transitionDuration).toBe('0s');
+    preview.classList.add('cdk-drag-animating');
+    expect(getComputedStyle(preview).transitionDuration).toBe('0s');
+    preview.classList.remove('cdk-drag-animating');
     document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: x, clientY: y + 12 }));
     await new Promise(resolve => setTimeout(resolve, 400));
     fixture.destroy();
@@ -136,7 +139,7 @@ describe('Fast route reordering', () => {
     expect(component.routeOrders.map(o => o.id)).toEqual(['b', 'a', 'c']);
   });
 
-  it('starts a touch drag after a brief hold and keeps the preview attached to the gesture', async () => {
+  it('starts a touch drag immediately without a hold and keeps the preview attached to the gesture', async () => {
     const fixture = TestBed.createComponent(AdminPedidosComponent);
     fixture.componentInstance.selectedRouteVendor = 'vendor';
     fixture.detectChanges();
@@ -149,12 +152,30 @@ describe('Fast route reordering', () => {
       clientX: rect.left + 20, clientY: y, pageX: rect.left + 20 + window.scrollX, pageY: y + window.scrollY });
     const start = touch(rect.top + 20);
     grip.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [start], targetTouches: [start], changedTouches: [start] }));
-    await new Promise(resolve => setTimeout(resolve, 200));
     const moved = touch(rect.top + 35);
     grip.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, cancelable: true, touches: [moved], targetTouches: [moved], changedTouches: [moved] }));
     expect(fixture.componentInstance.draggingRoute).toBeTrue();
     grip.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [moved] }));
     await new Promise(resolve => setTimeout(resolve, 400));
     fixture.destroy();
+  });
+  it('does not scan historical orders again when beginning a drag or rendering counters', async () => {
+    const fixture = TestBed.createComponent(AdminPedidosComponent);
+    fixture.componentInstance.selectedRouteVendor = 'vendor';
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const dateLookup = spyOn(state, 'getOrderDate').and.callThrough();
+    fixture.componentInstance.startRouteDrag();
+    fixture.detectChanges();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.unfulfilledCount).toBe(3);
+    expect(fixture.componentInstance.totalDayAmount).toBe(54);
+    expect(dateLookup).not.toHaveBeenCalled();
+    fixture.destroy();
+  });
+  it('updates the cached pending count when order status changes', () => {
+    expect(component.unfulfilledCount).toBe(3);
+    state.orders$.next(state.orders$.value.map((o: Order) => ({ ...o, status: 'delivered' })));
+    expect(component.unfulfilledCount).toBe(0);
   });
 });
