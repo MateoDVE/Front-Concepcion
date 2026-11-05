@@ -291,6 +291,24 @@ export class AdminCrearPedidoComponent implements OnInit {
       }
     }
 
+    // One product per order detail: combine repeated rows without changing prices.
+    const itemsByProduct = new Map<string, OrderFormItem>();
+    for (const item of this.orderItems) {
+      const existing = itemsByProduct.get(item.productId);
+      if (existing) {
+        if (Number(existing.price) !== Number(item.price)) {
+          this.openFeedbackModal('Producto con precios distintos',
+            `${item.name} aparece varias veces con precios diferentes. Usa un mismo precio para ese producto antes de guardar.`, 'warning');
+          return;
+        }
+        existing.quantity += item.quantity;
+      } else {
+        itemsByProduct.set(item.productId, { ...item });
+      }
+    }
+    this.orderItems = [...itemsByProduct.values()];
+    this.calculateTotal();
+
     if (!/^\d{4}-\d{2}-\d{2}$/.test(this.deliveryDate) || !Number.isFinite(Date.parse(this.deliveryDate))) {
       this.openFeedbackModal('Fecha requerida', 'Selecciona una fecha de entrega válida.', 'warning');
       return;
@@ -324,8 +342,13 @@ export class AdminCrearPedidoComponent implements OnInit {
         this.isEditing ? 'Pedido actualizado' : 'Pedido registrado',
         'Los datos se guardaron correctamente.', 'success',
         () => this.router.navigate(['/admin/dashboard'])),
-      error: () => this.openFeedbackModal('No se pudo guardar',
-        'El servidor no confirmó el guardado. Conservamos tus datos; comprueba la conexión y revisa los pedidos antes de reintentar.', 'error')
+      error: (error) => {
+        const message = error?.error?.message;
+        this.openFeedbackModal('No se pudo guardar',
+          error?.status === 400 && message
+            ? (Array.isArray(message) ? message.join('. ') : message)
+            : 'El servidor no confirmó el guardado. Conservamos tus datos; comprueba la conexión y revisa los pedidos antes de reintentar.', 'error');
+      }
     });
   }
 

@@ -84,4 +84,32 @@ describe('Order save lifecycle', () => {
       expect(state.createOrder).not.toHaveBeenCalled();
     });
   }
+  it('combines repeated products and preserves the total when creating', () => {
+    component.orderItems.push({ ...component.orderItems[0], quantity: 3 });
+    component.saveOrder();
+    expect(component.orderItems.length).toBe(1);
+    expect(state.createOrder).toHaveBeenCalledWith(jasmine.objectContaining({
+      items: [{ productId: 'water', name: 'Agua', quantity: 5, price: 10 }], total: 50
+    }));
+  });
+  it('combines repeated products when editing without changing the status', () => {
+    component.loadOrderData('order', false);
+    component.orderItems.push({ ...component.orderItems[0], quantity: 1 });
+    component.saveOrder();
+    expect(state.updateOrder).toHaveBeenCalledWith(jasmine.objectContaining({
+      status: 'loaded', items: [{ productId: 'water', name: 'Agua', quantity: 3, price: 10 }], total: 30
+    }));
+  });
+  it('preserves the form and blocks conflicting prices instead of changing the charge', () => {
+    component.orderItems.push({ ...component.orderItems[0], price: 12 });
+    component.saveOrder();
+    expect(state.createOrder).not.toHaveBeenCalled();
+    expect(component.orderItems.length).toBe(2);
+    expect(component.feedbackTitle).toBe('Producto con precios distintos');
+  });
+  it('shows validation errors returned by the server', () => {
+    component.saveOrder();
+    response.error({ status: 400, error: { message: ['Producto repetido'] } });
+    expect(component.feedbackMessage).toBe('Producto repetido');
+  });
 });
