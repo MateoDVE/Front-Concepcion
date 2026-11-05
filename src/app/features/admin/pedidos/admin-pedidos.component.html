@@ -35,13 +35,13 @@
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-primary text-base">calendar_today</span>
         <input type="date" 
-               [(ngModel)]="selectedDate" [disabled]="savingRoute"
+               [(ngModel)]="selectedDate" [disabled]="savingRoute || draggingRoute"
                (change)="onDateChange()" 
                class="input-date-clean font-semibold" 
                title="Seleccionar fecha (actual, pasada o futura)" />
         <span class="badge badge--today text-xs" *ngIf="isTodaySelected">Hoy</span>
         <span class="badge badge--tomorrow text-xs" *ngIf="isTomorrowSelected">Mañana</span>
-        <button *ngIf="!isTodaySelected" [disabled]="savingRoute" (click)="setToday()" class="btn-today-link" title="Volver a la fecha actual">
+        <button *ngIf="!isTodaySelected" [disabled]="savingRoute || draggingRoute" (click)="setToday()" class="btn-today-link" title="Volver a la fecha actual">
           Ir a hoy
         </button>
       </div>
@@ -66,25 +66,32 @@
     <p class="text-muted text-body-sm">Organiza las paradas pendientes de {{ formattedSelectedDate }}, incluso durante el recorrido. Cada movimiento se guarda automáticamente.</p>
     <div class="route-toolbar">
       <label for="route-vendor">Vendedor</label>
-      <select id="route-vendor" [(ngModel)]="selectedRouteVendor" (ngModelChange)="updateRouteOrders()" [disabled]="savingRoute">
+      <select id="route-vendor" [(ngModel)]="selectedRouteVendor" (ngModelChange)="updateRouteOrders()" [disabled]="savingRoute || draggingRoute">
         <option value="">Selecciona un vendedor</option>
         <option *ngFor="let vendor of vendors$ | async" [value]="vendor.id">{{ vendor.name }}</option>
       </select>
-      <button class="btn btn--outline" (click)="refreshRoute()" [disabled]="savingRoute">Actualizar</button>
+      <button class="btn btn--outline" (click)="refreshRoute()" [disabled]="savingRoute || draggingRoute">Actualizar</button>
     </div>
     <p class="text-caption text-muted">Incluye pendientes, cargados y en ruta. Los filtros de búsqueda y estado no ocultan paradas aquí.</p>
     <p *ngIf="selectedRouteVendor && !routeOrders.length" class="text-muted">No hay paradas pendientes para este vendedor y fecha.</p>
-    <ol class="route-stop-list">
-      <li *ngFor="let order of routeOrders; let i = index; let last = last; trackBy: trackRouteOrder" #routeStop class="route-stop" [class.route-stop--moved]="movedOrderId === order.id">
-        <span class="route-position">{{ i + 1 }}</span>
-        <div class="route-stop-info">
+    <p id="route-drag-help" class="text-caption text-muted">Arrastra desde el agarre o el nombre. En el celular, mantén presionado un instante y mueve la parada. Las flechas siguen disponibles.</p>
+    <ol class="route-stop-list" cdkDropList [cdkDropListData]="routeOrders" cdkDropListOrientation="vertical"
+        [cdkDropListAutoScrollStep]="8" (cdkDropListDropped)="dropRouteOrder($event)">
+      <li *ngFor="let order of routeOrders; let i = index; let last = last; trackBy: trackRouteOrder" #routeStop class="route-stop" cdkDrag cdkDragLockAxis="y" [cdkDragData]="order"
+          [cdkDragStartDelay]="{ mouse: 0, touch: 180 }" [cdkDragDisabled]="routeOrders.length < 2"
+          (cdkDragStarted)="startRouteDrag()" (cdkDragEnded)="endRouteDrag()" [class.route-stop--moved]="movedOrderId === order.id">
+        <span cdkDragHandle class="route-grip route-drag-handle" title="Arrastrar parada" aria-hidden="true" (contextmenu)="$event.preventDefault()">
+          <svg width="20" height="24" viewBox="0 0 20 24" fill="currentColor"><circle cx="6" cy="5" r="2"/><circle cx="14" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="14" cy="19" r="2"/></svg>
+        </span>
+        <span class="route-position route-drag-handle" (contextmenu)="$event.preventDefault()" cdkDragHandle aria-describedby="route-drag-help">{{ i + 1 }}</span>
+        <div class="route-stop-info route-drag-handle" cdkDragHandle aria-describedby="route-drag-help" (contextmenu)="$event.preventDefault()">
           <strong>{{ order.clientName }}</strong>
           <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
           <small>{{ order.code }} · {{ getStatusLabel(order.status) }}</small>
         </div>
         <div class="route-stop-actions">
-          <button class="btn btn--outline" (click)="moveRouteOrder(i, -1)" [disabled]="i === 0" [attr.aria-label]="'Subir parada de ' + order.clientName" title="Subir parada">↑</button>
-          <button class="btn btn--outline" (click)="moveRouteOrder(i, 1)" [disabled]="last" [attr.aria-label]="'Bajar parada de ' + order.clientName" title="Bajar parada">↓</button>
+          <button class="btn btn--outline" (click)="moveRouteOrder(i, -1, $event)" [disabled]="i === 0 || draggingRoute" [attr.aria-label]="'Subir parada de ' + order.clientName" title="Subir parada">↑</button>
+          <button class="btn btn--outline" (click)="moveRouteOrder(i, 1, $event)" [disabled]="last || draggingRoute" [attr.aria-label]="'Bajar parada de ' + order.clientName" title="Bajar parada">↓</button>
         </div>
       </li>
     </ol>

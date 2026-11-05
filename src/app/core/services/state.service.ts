@@ -408,6 +408,16 @@ export class StateService {
       motivo_falla: extra?.failedReason,
       metodo_pago: status === 'delivered' ? (extra?.paymentMethod || 'efectivo') : null
     }).pipe(
+      catchError(error => this.http.get<any>(`${APP_CONFIG.apiUrl}/orders/${orderId}`).pipe(
+        tap(current => this.upsertOrderInState(current)),
+        switchMap(current => {
+          const matches = current.estado === status
+            && (status !== 'delivered' || current.metodo_pago === (extra?.paymentMethod || 'efectivo'))
+            && (status !== 'failed' || current.motivo_falla === extra?.failedReason);
+          return matches ? of(current) : throwError(() => error);
+        }),
+        catchError(() => throwError(() => error))
+      )),
       tap(updated => {
         this.upsertOrderInState(updated);
         if (status === 'delivered' || previousStatus === 'delivered') this.loadProducts();
