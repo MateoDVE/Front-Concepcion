@@ -74,17 +74,17 @@
     </div>
     <p class="text-caption text-muted">Incluye pendientes, cargados y en ruta. Los filtros de búsqueda y estado no ocultan paradas aquí.</p>
     <p *ngIf="selectedRouteVendor && !routeOrders.length" class="text-muted">No hay paradas pendientes para este vendedor y fecha.</p>
-    <p id="route-drag-help" class="text-caption text-muted">Arrastra desde el agarre o el nombre. En el celular, mantén presionado un instante y mueve la parada. Las flechas siguen disponibles.</p>
+    <p id="route-drag-help" class="text-caption text-muted">Arrastra directamente desde los puntos para mover la parada. Desliza sobre el nombre para recorrer la lista. También puedes usar las flechas.</p>
     <ol class="route-stop-list" cdkDropList [cdkDropListData]="routeOrders" cdkDropListOrientation="vertical"
         [cdkDropListAutoScrollStep]="8" (cdkDropListDropped)="dropRouteOrder($event)">
       <li *ngFor="let order of routeOrders; let i = index; let last = last; trackBy: trackRouteOrder" #routeStop class="route-stop" cdkDrag cdkDragLockAxis="y" [cdkDragData]="order"
-          [cdkDragStartDelay]="{ mouse: 0, touch: 180 }" [cdkDragDisabled]="routeOrders.length < 2"
+          [cdkDragStartDelay]="0" [cdkDragDisabled]="routeOrders.length < 2"
           (cdkDragStarted)="startRouteDrag()" (cdkDragEnded)="endRouteDrag()" [class.route-stop--moved]="movedOrderId === order.id">
         <span cdkDragHandle class="route-grip route-drag-handle" title="Arrastrar parada" aria-hidden="true" (contextmenu)="$event.preventDefault()">
           <svg width="20" height="24" viewBox="0 0 20 24" fill="currentColor"><circle cx="6" cy="5" r="2"/><circle cx="14" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="14" cy="19" r="2"/></svg>
         </span>
-        <span class="route-position route-drag-handle" (contextmenu)="$event.preventDefault()" cdkDragHandle aria-describedby="route-drag-help">{{ i + 1 }}</span>
-        <div class="route-stop-info route-drag-handle" cdkDragHandle aria-describedby="route-drag-help" (contextmenu)="$event.preventDefault()">
+        <span class="route-position">{{ i + 1 }}</span>
+        <div class="route-stop-info">
           <strong>{{ order.clientName }}</strong>
           <span>{{ order.clientAddress || 'Sin dirección registrada' }}</span>
           <small>{{ order.code }} · {{ getStatusLabel(order.status) }}</small>

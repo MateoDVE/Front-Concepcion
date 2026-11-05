@@ -291,9 +291,9 @@ export class AdminPedidosComponent implements OnInit {
     }
   }
 
-  get totalDayAmount(): number {
-    return this.filteredOrders.reduce((sum, o) => sum + o.total, 0);
-  }
+  totalDayAmount = 0;
+  unfulfilledOrdersToday: Order[] = [];
+  unfulfilledCount = 0;
 
   applyFilterAndSearch() {
     let result = [...this.orders];
@@ -302,6 +302,13 @@ export class AdminPedidosComponent implements OnInit {
     if (this.selectedDate) {
       result = result.filter(o => this.stateService.getOrderDate(o) === this.selectedDate);
     }
+
+    // Compute once per data/filter update, never during pointer-triggered rendering.
+    const targetDate = this.selectedDate || this.stateService.getLocalDateString();
+    this.unfulfilledOrdersToday = result.filter(o =>
+      (this.selectedDate || this.stateService.getOrderDate(o) === targetDate)
+      && ['pending', 'loaded', 'failed', 'route'].includes(o.status));
+    this.unfulfilledCount = this.unfulfilledOrdersToday.length;
 
     // 2. Filtrar por estado activo
     if (this.activeFilter !== 'all') {
@@ -326,6 +333,7 @@ export class AdminPedidosComponent implements OnInit {
     // 4. Ordenar por fecha desc
     result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     this.filteredOrders = result;
+    this.totalDayAmount = result.reduce((sum, o) => sum + o.total, 0);
     this.updateRouteOrders();
   }
 
@@ -408,18 +416,6 @@ export class AdminPedidosComponent implements OnInit {
       this.cancelDeleteOrder();
       this.closeModal();
     });
-  }
-
-  get unfulfilledOrdersToday(): Order[] {
-    const targetDate = this.selectedDate || this.stateService.getLocalDateString();
-    return this.orders.filter(o => {
-      const orderDate = this.stateService.getOrderDate(o);
-      return orderDate === targetDate && ['pending', 'loaded', 'failed', 'route'].includes(o.status);
-    });
-  }
-
-  get unfulfilledCount(): number {
-    return this.unfulfilledOrdersToday.length;
   }
 
   openMoveModal() {

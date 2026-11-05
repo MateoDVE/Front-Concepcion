@@ -535,10 +535,12 @@ export class StateService {
     return order.scheduledDate || this.getLocalDateString(new Date(order.createdAt));
   }
 
-  getLocalDateString(date: Date = new Date()): string {
-    return new Intl.DateTimeFormat('en-CA', {
+  private readonly localDateFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/La_Paz', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).format(date);
+    });
+
+  getLocalDateString(date: Date = new Date()): string {
+    return this.localDateFormatter.format(date);
   }
 
   // ---- Price rule helper ----
