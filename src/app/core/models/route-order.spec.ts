@@ -12,8 +12,20 @@ describe('Route sequence shared by admin and vendor', () => {
     const orders = [order('done', 'delivered', 1), order('new', 'pending', null), order('failed', 'failed', 2), order('active', 'loaded', 3)];
     expect(orders.sort(compareRouteOrders).map(o => o.id)).toEqual(['active', 'new', 'done', 'failed']);
   });
-  it('uses creation date and ID as deterministic fallback', () => {
+  it('restores status priority for orders without manual positions', () => {
     const orders = [order('b', 'loaded', null), order('a', 'pending', null), order('old', 'route', null, '2026-10-28T10:00:00Z')];
+    expect(orders.sort(compareRouteOrders).map(o => o.id)).toEqual(['old', 'b', 'a']);
+  });
+  it('uses creation date and code within the same unassigned status', () => {
+    const orders = [order('b', 'pending', null), order('a', 'pending', null), order('old', 'pending', null, '2026-10-28T10:00:00Z')];
     expect(orders.sort(compareRouteOrders).map(o => o.id)).toEqual(['old', 'a', 'b']);
+  });
+  it('keeps failed stops before delivered stops and sorts deliveries by delivery time', () => {
+    const orders = [
+      { ...order('later', 'delivered', null), deliveredAt: '2026-10-28T15:00:00Z' },
+      order('failed', 'failed', null),
+      { ...order('earlier', 'delivered', null), deliveredAt: '2026-10-28T13:00:00Z' },
+    ];
+    expect(orders.sort(compareRouteOrders).map(o => o.id)).toEqual(['failed', 'earlier', 'later']);
   });
 });

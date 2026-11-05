@@ -28,7 +28,12 @@ export class VendorRutaComponent implements OnInit {
     this.actionError = '';
     this.stateService.updateOrderStatus(id, status, extra).pipe(finalize(() => this.pendingOrders.delete(id))).subscribe({
       next: () => { this.expandedOrderIds.delete(id); done?.(); },
-      error: () => this.actionError = 'No se pudo confirmar el cambio. Actualiza la ruta para comprobar el estado antes de reintentar.'
+      error: (error) => {
+        const message = error?.error?.message;
+        this.actionError = error?.status >= 400 && error?.status < 500 && message
+          ? (Array.isArray(message) ? message.join('. ') : message)
+          : 'No se pudo confirmar el cambio. Comprueba tu conexión e intenta confirmar nuevamente.';
+      }
     });
   }
   getStatusLabel(status: OrderStatus): string {

@@ -1,3 +1,4 @@
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DialogFocusDirective } from '../../../core/directives/dialog-focus.directive';
 import { Observable, finalize } from 'rxjs';
 import { afterNextRender, Component, DestroyRef, ElementRef, inject, Injector, NgZone, OnInit, QueryList, ViewChildren } from '@angular/core';
@@ -14,7 +15,7 @@ type FilterStatus = 'all' | OrderStatus;
 
 @Component({
   selector: 'app-admin-pedidos',
-  imports: [DialogFocusDirective, CommonModule, RouterLink, FormsModule, FeedbackModalComponent],
+  imports: [CdkDrag, CdkDragHandle, CdkDropList, DialogFocusDirective, CommonModule, RouterLink, FormsModule, FeedbackModalComponent],
   templateUrl: './admin-pedidos.component.html',
   styleUrl: './admin-pedidos.component.scss',
   standalone: true
@@ -58,6 +59,8 @@ export class AdminPedidosComponent implements OnInit {
   selectedRouteVendor = '';
   routeOrders: Order[] = [];
   savingRoute = false;
+  draggingRoute = false;
+  private routeSaveFailedDuringDrag = false;
   routeMessage = '';
   private confirmedRouteIds: string[] = [];
   private routeSaveInFlight = false;
@@ -95,18 +98,61 @@ export class AdminPedidosComponent implements OnInit {
   }
 
   updateRouteOrders() {
-    if (this.savingRoute) return;
+    if (this.savingRoute || this.draggingRoute) return;
     this.routeOrders = this.orders.filter(o => o.vendorId === this.selectedRouteVendor
       && this.stateService.getOrderDate(o) === this.selectedDate
       && isActiveStop(o)).sort(compareRouteOrders);
     this.confirmedRouteIds = this.routeOrders.map(o => o.id);
   }
 
-  moveRouteOrder(index: number, direction: number) {
-    const target = index + direction;
+  startRouteDrag() {
+    this.draggingRoute = true;
+    this.pendingAnimationRender?.destroy();
+    this.pendingAnimationRender = undefined;
+    this.pendingPositions.clear();
+    this.stopAnimations.forEach(animation => animation.cancel());
+    this.stopAnimations.clear();
+    this.routeMovementMessage = 'Arrastra la parada a su nueva posición y suelta para guardar.';
+  }
+
+  endRouteDrag() {
+    this.draggingRoute = false;
+  }
+
+  dropRouteOrder(event: CdkDragDrop<Order[]>) {
+    this.draggingRoute = false;
+    if (this.routeSaveFailedDuringDrag) {
+      this.routeSaveFailedDuringDrag = false;
+      this.updateRouteOrders();
+      this.stateService.loadOrders();
+      return;
+    }
+    if (!event.isPointerOverContainer || event.previousIndex === event.currentIndex) {
+      this.routeMovementMessage = '';
+      if (this.savingRoute) this.saveRoute();
+      else this.updateRouteOrders();
+      return;
+    }
+    this.repositionRouteOrder(event.previousIndex, event.currentIndex, false);
+  }
+
+  moveRouteOrder(index: number, direction: number, event?: MouseEvent) {
+    if (this.draggingRoute) return;
+    const animate = !event || event.detail !== 0;
+    if (!animate) {
+      this.pendingAnimationRender?.destroy();
+      this.pendingAnimationRender = undefined;
+      this.pendingPositions.clear();
+      this.stopAnimations.forEach(animation => animation.cancel());
+      this.stopAnimations.clear();
+    }
+    this.repositionRouteOrder(index, index + direction, animate);
+  }
+
+  private repositionRouteOrder(index: number, target: number, animate: boolean) {
     if (index < 0 || index >= this.routeOrders.length || target < 0 || target >= this.routeOrders.length) return;
     // Only the two swapped rows change layout; avoid measuring the entire route.
-    for (const position of [index, target]) {
+    for (const position of animate ? [index, target] : []) {
       const element = this.routeStopElements?.get(position)?.nativeElement;
       if (element && !this.pendingPositions.has(element)) {
         this.pendingPositions.set(element, element.getBoundingClientRect().top);
@@ -118,7 +164,7 @@ export class AdminPedidosComponent implements OnInit {
     clearTimeout(this.highlightTimer);
     this.highlightTimer = setTimeout(() => this.movedOrderId = null, 700);
     const reordered = [...this.routeOrders];
-    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    moveItemInArray(reordered, index, target);
     this.routeOrders = reordered;
     if (this.pendingPositions.size && !this.pendingAnimationRender) {
       this.pendingAnimationRender = afterNextRender(() => {
@@ -151,7 +197,7 @@ export class AdminPedidosComponent implements OnInit {
       const animation = element.animate([
         { transform: `translateY(${offset}px)` },
         { transform: 'translateY(0)' }
-      ], { duration: 150, easing: 'cubic-bezier(0.2, 0, 0.2, 1)' });
+      ], { duration: 160, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
       this.stopAnimations.set(element, animation);
       animation.onfinish = () => {
         if (this.stopAnimations.get(element) === animation) this.stopAnimations.delete(element);
@@ -161,7 +207,7 @@ export class AdminPedidosComponent implements OnInit {
 
   private saveRoute() {
     // Keep only the latest desired sequence while one request is in flight.
-    if (this.routeSaveInFlight) return;
+    if (this.routeSaveInFlight || this.draggingRoute) return;
     const ids = this.routeOrders.map(o => o.id);
     if (ids.every((id, index) => id === this.confirmedRouteIds[index])) {
       this.savingRoute = false;
@@ -181,11 +227,12 @@ export class AdminPedidosComponent implements OnInit {
           this.savingRoute = false;
           this.movedOrderId = null;
           this.routeMovementMessage = '';
+          this.routeSaveFailedDuringDrag = this.draggingRoute;
           this.updateRouteOrders();
           this.routeMessage = err.status === 409
             ? 'La ruta cambió. Se descartaron los movimientos pendientes y se actualizará la lista.'
             : 'No se pudo confirmar el guardado. Se descartaron los movimientos pendientes y se actualizará la lista.';
-          this.stateService.loadOrders();
+          if (!this.draggingRoute) this.stateService.loadOrders();
         }
       });
   }
